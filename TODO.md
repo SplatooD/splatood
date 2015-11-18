@@ -15,3 +15,7 @@
 ## 1.3
 
 - AI players
+
+## Misc
+
+- cc65 2.15 compatibility
