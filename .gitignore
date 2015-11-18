@@ -1,0 +1,6 @@
+*.o
+*.nes
+*~
+game.s
+.DS_Store
+*.swp
