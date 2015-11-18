@@ -14,7 +14,7 @@ Assets were created in NESST and Famitracker.
 
 ### Updating Strings
 
-All strings in SplatooD are formatted as EBCDIC with an offset. Use the Python script in `util/ebcdic.py` to convert ASCII to appropriate arrays.
+Strings in SplatooD are formatted as nul-terminated tileset IDs. There is a tool in `util/string.py` to generate C arrays from input text.
 
 ### Updating Nametable Headers
 

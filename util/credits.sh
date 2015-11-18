@@ -1,6 +1,6 @@
 function credit_line() {
 	echo -n "const unsigned char credits_$1[] = ";
-	echo "$2" | python ebcdic.py
+	echo "$2" | python string.py
 }
 
 
