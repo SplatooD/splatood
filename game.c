@@ -59,9 +59,9 @@ extern const unsigned char music_music_data[];
 
 /* Sound effects */
 #define SFX_START       0
-#define SFX_ITEM        1
+#define SFX_SPLAT       1
 #define SFX_RESPAWN1    2
-#define SFX_RESPAWN2    3
+#define SFX_DEATH       3
 
 /* Music */
 #define MUSIC_LEVEL         0
@@ -561,13 +561,13 @@ void show_title(void) {
 
     /* Splat splat splat */
     WAIT_WITH_SKIP(20);
-    sfx_play(SFX_ITEM,0);
+    sfx_play(SFX_SPLAT,0);
     pal_bg(palTitleB);
     WAIT_WITH_SKIP(20);
-    sfx_play(SFX_ITEM,0);
+    sfx_play(SFX_SPLAT,0);
     pal_bg(palTitleC);
     WAIT_WITH_SKIP(20);
-    sfx_play(SFX_ITEM,0);
+    sfx_play(SFX_SPLAT,0);
     pal_bg(palTitle);
     WAIT_WITH_SKIP(20);
     music_play(MUSIC_TITLE);
@@ -970,7 +970,7 @@ void player_move(unsigned char id,unsigned char dir) {
 
     player_cnt[id]=TILE_SIZE<<FP_BITS;
     player_diag_flip[id]=1;
-    sfx_play(SFX_ITEM,0);
+    sfx_play(SFX_SPLAT,0);
 }
 
 /**
@@ -999,7 +999,7 @@ void player_die(unsigned char id) {
     player_dir[id] = DIR_NONE;
 
     player_wait[id] = RESPAWN_TIME;
-    sfx_play(SFX_ITEM,0);
+    sfx_play(SFX_DEATH,0);
 }
 
 
@@ -1165,7 +1165,7 @@ void game_loop(void) {
                 pal_spr(levelList[game_level*LEVEL_ENTRY+2]);
             }
             music_pause(game_paused);
-            sfx_play(SFX_ITEM,0);
+            sfx_play(SFX_SPLAT,0);
         }
 
         /* Skip processing inputs when the game is paused. */
@@ -1196,7 +1196,7 @@ void game_loop(void) {
             /* Flash respawning players, and prevent them from providing input. */
             if (player_wait[i]) {
                 if (player_wait[i] == 16) {
-                    sfx_play(i?SFX_RESPAWN2:SFX_RESPAWN1,i);
+                    sfx_play(SFX_RESPAWN1,0);
                 }
                 --player_wait[i];
                 continue;
