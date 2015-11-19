@@ -94,24 +94,24 @@ const unsigned char tieMsg[] = "It's a tie!";
 const unsigned char selector[] = "*";
 const unsigned char zero[]={0};
 
-
-const unsigned char credits_0[]  = "          SplatooD";
-const unsigned char credits_1[]  = "      a Splatoon demake";
-const unsigned char credits_2[]  = "        Project Lead";
-const unsigned char credits_3[]  = "      John Carmackeral";
-const unsigned char credits_4[]  = "           Music";
-const unsigned char credits_5[]  = "     Nobuo Squidimatsu";
-const unsigned char credits_6[]  = "      Title & Postgame";
-const unsigned char credits_7[]  = "        Koji Ikarashi";
-const unsigned char credits_8[]  = "        Game Design";
-const unsigned char credits_9[]  = "       Squideo Kojima";
-const unsigned char credits_10[] = "          Graphics";
-const unsigned char credits_11[] = "         Squid Meier";
-const unsigned char credits_12[] = "        Game Mechanics";
-const unsigned char credits_13[] = "        American McGill";
-const unsigned char credits_14[] = "      Splatoon (C) 2015";
-const unsigned char credits_15[] = "          Nintendo";
-const unsigned char credits_16[] = "     Thanks for playing!";
+                                /* "                                " */
+const unsigned char credits_0[]  = "      SplatooD";
+const unsigned char credits_1[]  = " a Splatoon demake";
+const unsigned char credits_2[]  = "    Project Lead";
+const unsigned char credits_3[]  = "  John Carmackeral";
+const unsigned char credits_4[]  = "       Music";
+const unsigned char credits_5[]  = " Nobuo Squidimatsu";
+const unsigned char credits_6[]  = "  Title & Postgame";
+const unsigned char credits_7[]  = "   Koji Ikarashi";
+const unsigned char credits_8[]  = "    Game Design";
+const unsigned char credits_9[]  = "   Squideo Kojima";
+const unsigned char credits_10[] = "      Graphics";
+const unsigned char credits_11[] = "    Squid Meier";
+const unsigned char credits_12[] = "   Game Mechanics";
+const unsigned char credits_13[] = "  American McGill";
+const unsigned char credits_14[] = " Splatoon (C) 2015";
+const unsigned char credits_15[] = "      Nintendo";
+const unsigned char credits_16[] = "Thanks for playing!";
 
 const unsigned char * credits[] = { credits_0, credits_1, credits_2, credits_3, credits_4, credits_5, credits_6, credits_7, credits_8, credits_9, credits_10, credits_11, credits_12, credits_13, credits_14, credits_15, credits_16, zero, zero, zero };
 
@@ -715,46 +715,59 @@ void show_credits() {
 
     /* Write credits. */
     i = 0;
+    j = 0;
+    div = 0;
+
+    /* Clear the scrolling nametables, A and C */
+    vram_adr(NAMETABLE_C);
+    vram_fill(0xa0,1024-64);
+    vram_fill(0,64);
+
+    sum = NAMETABLE_C;
 
     while (i < 17) { /* 4 6 A C */
+        ppu_wait_nmi();
         ppu_off();
-        vram_adr(NAMETABLE_A);
+        vram_adr(sum);
         vram_fill(0xa0,1024-64);
         vram_fill(0,64);
-        ppu_on_bg();
+        print_str(sum+0x126, credits[i]);
+        print_str(sum+0x166, credits[i+1]);
+        print_str(sum+0x1C6, credits[i+2]);
+        print_str(sum+0x206, credits[i+3]);
+        ppu_on_all();
 
-        /*
-         * This works much the same as the map select screen.
-         *
-         * We turn off the PPU and render text. Then we'll delay
-         * a bit before writing the next line.
-         *
-         * We show four lines per screen, which usually means
-         * two people, with their titles.
-         */
+        do {
+            scroll(0,div);
 
-        ppu_off();
-        print_str(NAMETABLE_A+0x122, credits[i]);
-        ppu_on_bg();
-        WAIT_WITH_SKIP(50);
+            /* Judd as a sprite. */
+            if (i == 0 && div < 0x62) {
+                oam_meta_spr(0x70,0x48-div,0,(char*)i16);
+            }
 
-        ppu_off();
-        print_str(NAMETABLE_A+0x162, credits[i+1]);
-        ppu_on_bg();
-        WAIT_WITH_SKIP(50);
+            div++;
+            WAIT_WITH_SKIP(1);
+        } while (div % 240);
+        if (div == 480) div = 0;
 
-        ppu_off();
-        print_str(NAMETABLE_A+0x1C2, credits[i+2]);
-        ppu_on_bg();
-        WAIT_WITH_SKIP(50);
+        if (sum == NAMETABLE_A) sum = NAMETABLE_C;
+        else sum = NAMETABLE_A;
 
-        ppu_off();
-        print_str(NAMETABLE_A+0x202, credits[i+3]);
-        ppu_on_bg();
         WAIT_WITH_SKIP(50);
         i+=4;
     }
-    WAIT_WITH_SKIP(200);
+    WAIT_WITH_SKIP(100);
+
+    ppu_off();
+    vram_adr(sum);
+    vram_fill(0xa0,1024-64);
+    ppu_on_all();
+
+    while (div % 240 < 100) {
+        WAIT_WITH_SKIP(1);
+        scroll(0,div);
+        div++;
+    }
 
 _skip_title:
     delay(20);
@@ -811,15 +824,17 @@ void show_endgame(void) {
     /* Print the victory message. */
     if (player_score[0] > player_score[1]) {
         print_str(NAMETABLE_A+0x1C9,victoryMsg);
-        oam_meta_spr(0x68,0x48,0,judd_left);
+        i16 = (int)judd_left;
     } else if (player_score[0] == player_score[1]) {
         /* If both players have the same score, it was a tie. */
         print_str(NAMETABLE_A+0x1CB,tieMsg);
-        oam_meta_spr(0x70,0x48,0,judd_tie);
+        i16 = (int)judd_tie;
     } else {
         print_str(NAMETABLE_A+0x1CF,victoryMsg);
-        oam_meta_spr(0x70,0x48,0,judd_right);
+        i16 = (int)judd_right;
     }
+
+    oam_meta_spr(0x70,0x48,0,(char*)i16);
 
     /* Print raw player scores below the gauge */
     put_num(NAMETABLE_A+0x24A,player_score[0],3);
@@ -851,7 +866,6 @@ void show_endgame(void) {
         if ((pad_trigger(0) | pad_trigger(1)) & PAD_START) break;
     }
     reset_palette_state();
-    oam_clear();
 }
 
 /* 
@@ -1338,6 +1352,7 @@ void game_loop(void) {
 
 
 void main(void) {
+
     while (1) {
         /* Show the main title. */
         show_title();
