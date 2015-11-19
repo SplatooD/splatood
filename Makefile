@@ -12,7 +12,7 @@ LD = ld65
 
 all: $(EXECUTABLE) ${CRT_OBJ}
 
-crt0.o: *.s
+crt0.o: *.s *.chr
 
 %.s: %.c *.h
 	$(CC) -Oi $< --add-source
