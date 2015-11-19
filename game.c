@@ -94,7 +94,6 @@ const unsigned char tieMsg[] = "It's a tie!";
 const unsigned char selector[] = "*";
 const unsigned char zero[]={0};
 
-                                /* "                                " */
 const unsigned char credits_0[]  = "      SplatooD";
 const unsigned char credits_1[]  = " a Splatoon demake";
 const unsigned char credits_2[]  = "    Project Lead";
