@@ -2,7 +2,8 @@
 
 ## 1.1
 
-- Whoomy
+- Spawn invincibility (to prevent spawn camping)
+- Woomy
 - Chargers
 - New SFX
 
