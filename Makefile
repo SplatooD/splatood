@@ -14,7 +14,7 @@ all: $(EXECUTABLE) ${CRT_OBJ}
 
 crt0.o: *.s *.chr
 
-%.s: %.c *.h
+%.s: %.c *.h levels/*.h
 	$(CC) -Oi $< --add-source
 
 %.o: %.s
