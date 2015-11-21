@@ -17,6 +17,12 @@
 
 - AI players
 
+## 2.0
+
+- Campaign
+
 ## Misc
 
 - cc65 2.15 compatibility
+- Included manual
+- Cover art
