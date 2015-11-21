@@ -17,6 +17,9 @@
 
 #include "levels/endgame.h"
 
+/* Metasprite definitions */
+#include "metasprites.h"
+
 /* Music data comes from music.s */
 extern const unsigned char music_music_data[];
 
@@ -43,6 +46,16 @@ extern const unsigned char music_music_data[];
 #define DIR_DOWN        PAD_DOWN
 #define WALK_CYCLE      2
 #define FRAMES_PER_STEP 10
+
+/* Sprite indices */
+#define SPR_DOWN        0
+#define SPR_RIGHT       1
+#define SPR_UP          2
+#define SPR_LEFT        3
+
+/* Weapons */
+#define WPN_ROLLER      0
+#define WPN_CHARGER     1
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
@@ -120,229 +133,6 @@ const unsigned char level_bluefin_depot[] = "Bluefin Depot";
 const unsigned char level_saltspray[] = "Saltspray Rig";
 const unsigned char level_twofish[] = "Two Fish";
 
-/* Meta sprites for players */
-/* DOWN, LEFT, RIGHT, UP */
-const unsigned char sprPlayerA1[][17]={
-    {
-        0,-1,0x40,0,
-        8,-1,0x41,0,
-        0, 7,0x50,0,
-        8, 7,0x51,0,
-        128
-    },
-    {
-        0,-1,0x45,0|OAM_FLIP_H,
-        8,-1,0x44,0|OAM_FLIP_H,
-        0, 7,0x55,0|OAM_FLIP_H,
-        8, 7,0x54,0|OAM_FLIP_H,
-        128
-    },
-    {
-        0,-1,0x44,0,
-        8,-1,0x45,0,
-        0, 7,0x54,0,
-        8, 7,0x55,0,
-        128
-    },
-    {
-        0,-1,0x48,0,
-        8,-1,0x49,0,
-        0, 7,0x58,0,
-        8, 7,0x59,0,
-        128
-    }
-};
-
-const unsigned char sprPlayerA2[][17]={
-    {
-        0,-1,0x42,0,
-        8,-1,0x43,0,
-        0, 7,0x52,0,
-        8, 7,0x53,0,
-        128
-    },
-    {
-        0,-1,0x47,0|OAM_FLIP_H,
-        8,-1,0x46,0|OAM_FLIP_H,
-        0, 7,0x57,0|OAM_FLIP_H,
-        8, 7,0x56,0|OAM_FLIP_H,
-        128
-    },
-    {
-        0,-1,0x46,0,
-        8,-1,0x47,0,
-        0, 7,0x56,0,
-        8, 7,0x57,0,
-        128
-    },
-    {
-        0,-1,0x4a,0,
-        8,-1,0x4b,0,
-        0, 7,0x5a,0,
-        8, 7,0x5b,0,
-        128
-    }
-};
-
-const unsigned char sprPlayerB1[][17]={
-    {
-        0,-1,0x40,1,
-        8,-1,0x41,1,
-        0, 7,0x50,1,
-        8, 7,0x51,1,
-        128
-    },
-    {
-        0,-1,0x45,1|OAM_FLIP_H,
-        8,-1,0x44,1|OAM_FLIP_H,
-        0, 7,0x55,1|OAM_FLIP_H,
-        8, 7,0x54,1|OAM_FLIP_H,
-        128
-    },
-    {
-        0,-1,0x44,1,
-        8,-1,0x45,1,
-        0, 7,0x54,1,
-        8, 7,0x55,1,
-        128
-    },
-    {
-        0,-1,0x48,1,
-        8,-1,0x49,1,
-        0, 7,0x58,1,
-        8, 7,0x59,1,
-        128
-    }
-};
-
-const unsigned char sprPlayerB2[][17]={
-    {
-        0,-1,0x42,1,
-        8,-1,0x43,1,
-        0, 7,0x52,1,
-        8, 7,0x53,1,
-        128
-    },
-    {
-        0,-1,0x47,1|OAM_FLIP_H,
-        8,-1,0x46,1|OAM_FLIP_H,
-        0, 7,0x57,1|OAM_FLIP_H,
-        8, 7,0x56,1|OAM_FLIP_H,
-        128
-    },
-    {
-        0,-1,0x46,1,
-        8,-1,0x47,1,
-        0, 7,0x56,1,
-        8, 7,0x57,1,
-        128
-    },
-    {
-        0,-1,0x4a,1,
-        8,-1,0x4b,1,
-        0, 7,0x5a,1,
-        8, 7,0x5b,1,
-        128
-    }
-};
-
-
-/* Judd metasprites for post-game screen. */
-const unsigned char judd_left[] = {
-     0,0,0x60,1,
-     8,0,0x61,1,
-    16,0,0x62,0,
-    24,0,0x63,0,
-    32,0,0x64,0,
-
-     0,8,0x70,1,
-     8,8,0x71,1,
-    16,8,0x72,0,
-    24,8,0x73,0,
-    32,8,0x74,0,
-
-     0,16,0x80,1,
-     8,16,0x81,1,
-    16,16,0x82,0,
-    24,16,0x83,0,
-    32,16,0x84,0,
-
-     0,24,0x90,1,
-     8,24,0x91,1,
-    16,24,0x92,0,
-    24,24,0x93,0,
-    32,24,0x94,0,
-
-    128,
-};
-
-const unsigned char judd_tie[] = {
-    0,0,0x65,0,
-    8,0,0x62,0,
-    16,0,0x63,0,
-    24,0,0x64,0,
-
-    0,8,0x75,0,
-    8,8,0x72,0,
-    16,8,0x73,0,
-    24,8,0x74,0,
-
-    0,16,0x85,0,
-    8,16,0x82,0,
-    16,16,0x83,0,
-    24,16,0x84,0,
-
-    0,24,0x95,0,
-    8,24,0x92,0,
-    16,24,0x93,0,
-    24,24,0x94,0,
-
-    128,
-};
-
-const unsigned char judd_right[] = {
-    32,0,0x60,2|OAM_FLIP_H,
-    24,0,0x61,2|OAM_FLIP_H,
-    16,0,0x62,0|OAM_FLIP_H,
-     8,0,0x63,0|OAM_FLIP_H,
-     0,0,0x64,0|OAM_FLIP_H,
-
-    32,8,0x70,2|OAM_FLIP_H,
-    24,8,0x71,2|OAM_FLIP_H,
-    16,8,0x72,0|OAM_FLIP_H,
-     8,8,0x73,0|OAM_FLIP_H,
-     0,8,0x74,0|OAM_FLIP_H,
-
-    32,16,0x80,2|OAM_FLIP_H,
-    24,16,0x81,2|OAM_FLIP_H,
-    16,16,0x82,0|OAM_FLIP_H,
-     8,16,0x83,0|OAM_FLIP_H,
-     0,16,0x84,0|OAM_FLIP_H,
-
-    32,24,0x90,2|OAM_FLIP_H,
-    24,24,0x91,2|OAM_FLIP_H,
-    16,24,0x92,0|OAM_FLIP_H,
-     8,24,0x93,0|OAM_FLIP_H,
-     0,24,0x94,0|OAM_FLIP_H,
-
-    128,
-};
-
-/* Metasprite sets. */
-const unsigned char* const sprListPlayerDown[]={
-    sprPlayerA1[0],sprPlayerA2[0],sprPlayerB1[0],sprPlayerB2[0]
-};
-const unsigned char* const sprListPlayerLeft[]={
-    sprPlayerA1[1],sprPlayerA2[1],sprPlayerB1[1],sprPlayerB2[1]
-};
-const unsigned char* const sprListPlayerRight[]={
-    sprPlayerA1[2],sprPlayerA2[2],sprPlayerB1[2],sprPlayerB2[2]
-};
-const unsigned char* const sprListPlayerUp[]={
-    sprPlayerA1[3],sprPlayerA2[3],sprPlayerB1[3],sprPlayerB2[3]
-};
-
-
 /* Level count */
 #define LEVELS_ALL 4
 
@@ -399,6 +189,7 @@ static unsigned char player_wait     [PLAYER_MAX];
 static unsigned char player_cooldown     [PLAYER_MAX];
 static unsigned char player_anim_cnt [PLAYER_MAX];
 static unsigned char player_diag_flip[PLAYER_MAX];
+static unsigned char player_wpn      [PLAYER_MAX];
 
 static unsigned int  projectile_x        [PLAYER_MAX];
 static unsigned int  projectile_y        [PLAYER_MAX];
@@ -413,7 +204,8 @@ static unsigned char game_done;
 static unsigned char game_paused;
 
 static unsigned char frame_cnt;
-static unsigned char anim_index;
+static unsigned char anim_frame;
+static unsigned char spr_dir;
 static unsigned char bright;
 
 static unsigned char timer;
@@ -1092,6 +884,8 @@ void game_loop(void) {
                 player_wait      [player_all] = 16+((spr-TILE_PLAYERA)<<4);
                 player_cooldown  [player_all] = 0;
                 player_speed     [player_all] = 2<<FP_BITS;
+                // Weapons are hardcoded for now
+                player_wpn       [player_all] = WPN_ROLLER;
 
                 projectile_cnt   [player_all] = 0;
                 projectile_dir   [player_all] = DIR_NONE;
@@ -1145,15 +939,18 @@ void game_loop(void) {
 
             px = player_x[i]>>FP_BITS;
 
-            anim_index = i * WALK_CYCLE + (player_anim_cnt[i] / FRAMES_PER_STEP) % WALK_CYCLE;
+            anim_frame = (player_anim_cnt[i] / FRAMES_PER_STEP) % WALK_CYCLE;
 
             switch (player_dir[i]) {
                 case DIR_NONE:
-                case DIR_DOWN: oam_meta_spr(px,py,spr,sprListPlayerDown[anim_index]); break;
-                case DIR_LEFT: oam_meta_spr(px,py,spr,sprListPlayerLeft[anim_index]); break;
-                case DIR_RIGHT: oam_meta_spr(px,py,spr,sprListPlayerRight[anim_index]); break;
-                case DIR_UP: oam_meta_spr(px,py,spr,sprListPlayerUp[anim_index]); break;
+                case DIR_DOWN: spr_dir = SPR_DOWN; break;
+                case DIR_LEFT: spr_dir = SPR_LEFT; break;
+                case DIR_RIGHT: spr_dir = SPR_RIGHT; break;
+                case DIR_UP: spr_dir = SPR_UP; break;
             }
+            oam_meta_spr(
+                px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame],
+            );
             spr-=16;
         }
 
