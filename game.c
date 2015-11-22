@@ -54,6 +54,7 @@ extern const unsigned char music_music_data[];
 #define SPR_LEFT        3
 
 /* Weapons */
+#define NUM_WPNS        2
 #define WPN_ROLLER      0
 #define WPN_CHARGER     1
 
@@ -151,6 +152,15 @@ const unsigned char* const levelList[LEVELS_ALL*4]={
     twofish,palInkable,palCharacters,level_twofish,
 };
 
+/* Weapon Select */
+const unsigned char select_weapon_1[] =  "Player 1 Select Weapon";
+const unsigned char select_weapon_2[] =  "Player 2 Select Weapon";
+const unsigned char* const select_weapon[] = { select_weapon_1, select_weapon_2 };
+const unsigned char weapon_roller[] = "Roller";
+const unsigned char weapon_charger[] = "Charger";
+// Order weapons by their constants (see WPN_ROLLER, etc above)
+const unsigned char* const weapon_list[NUM_WPNS] = { weapon_roller, weapon_charger };
+
 /* This is used to ensure the updatelist starts empty. */
 const unsigned char updateListData[]={
     NT_UPD_EOF
@@ -166,7 +176,7 @@ static unsigned char palette_state[64];
 #pragma bssseg (push,"ZEROPAGE")
 #pragma dataseg(push,"ZEROPAGE")
 
-static unsigned char i,j;
+static unsigned char i,j,k;
 static unsigned char ptr,spr;
 static unsigned char px,py;
 static unsigned char wait;
@@ -443,7 +453,7 @@ void print_str(unsigned int adr, const unsigned char * str) {
 /**
  * Map select screen.
  */
-void show_select() {
+void show_select_map() {
     /* Use bank 1 to get full characterset tiles */
     bank_bg(1);
     bank_spr(1);
@@ -468,8 +478,7 @@ void show_select() {
         }
 
         /*
-         * An asterisk represents the current selection.
-         * TODO: use something nicer in 1.1
+         * A squid represents the current selection.
          */
         print_str(NAMETABLE_A+0x146+0x20*game_level,selector);
         ppu_on_bg();
@@ -494,6 +503,61 @@ void show_select() {
             if (j & PAD_SELECT || j & PAD_DOWN) {
                 game_level += 1;
                 if (game_level == LEVELS_ALL) game_level = 0;
+                break;
+            }
+        }
+
+    }
+}
+
+/**
+ * Weapon select screen.
+ */
+void show_select_weapon(unsigned char player_id) {
+    player_wpn[player_id] = WPN_ROLLER;
+    while (1) {
+        /* We disable the PPU while we draw text. */
+        ppu_off();
+        pal_bg(palEndgame);
+
+        /* We don't use an existing nametable, but instead clear out NAMETABLE_A */
+        vram_adr(NAMETABLE_A);
+        vram_fill(0xa0,1024-64);
+        vram_fill(0,64);
+
+        print_str(NAMETABLE_A+0x0E7,select_weapon[player_id]);
+
+        /* Weapon names */
+        for (i = 0; i < NUM_WPNS; ++i) {
+            print_str(NAMETABLE_A+0x148+0x20*i,weapon_list[i]);
+        }
+
+        /*
+         * A squid represents the current selection.
+         */
+        print_str(NAMETABLE_A+0x146+0x20*player_wpn[player_id],selector);
+        ppu_on_bg();
+
+        /* Loop waiting for input. */
+        while (1) {
+            ppu_wait_frame();
+            j = pad_trigger(player_id);
+            /* Start - Select weapon */
+            if (j & PAD_START) return;
+            /* Up - move cursor up */
+            if (j & PAD_UP) {
+                if (player_wpn[player_id] == 0) {
+                    player_wpn[player_id] = NUM_WPNS-1;
+                } else {
+                    player_wpn[player_id] -= 1;
+                }
+
+                break;
+            }
+            /* Select or Down - move cursor down */
+            if (j & PAD_SELECT || j & PAD_DOWN) {
+                player_wpn[player_id] += 1;
+                if (player_wpn[player_id] == NUM_WPNS) player_wpn[player_id] = 0;
                 break;
             }
         }
@@ -884,8 +948,6 @@ void game_loop(void) {
                 player_wait      [player_all] = 16+((spr-TILE_PLAYERA)<<4);
                 player_cooldown  [player_all] = 0;
                 player_speed     [player_all] = 2<<FP_BITS;
-                // Weapons are hardcoded for now
-                player_wpn       [player_all] = WPN_ROLLER;
 
                 projectile_cnt   [player_all] = 0;
                 projectile_dir   [player_all] = DIR_NONE;
@@ -1162,7 +1224,12 @@ void main(void) {
         show_title();
 
         /* Select a map. */
-        show_select();
+        show_select_map();
+
+        /* Select weapons */
+        for (k = 0; k < NUM_WPNS; ++k) {
+            show_select_weapon(k);
+        }
 
         /* Start the game. */
         game_loop();
