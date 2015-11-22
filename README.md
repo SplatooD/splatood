@@ -4,7 +4,7 @@
 
 ## Controls
 
-D-pad to move, A to flick roller, START to pause. Menus accept D-pad to move cursor and START to select an item.
+D-pad to move, A to flick roller or fire charger, START to pause. Menus accept D-pad to move cursor and START to select an item.
 
 ## Building
 

@@ -60,8 +60,11 @@ extern const unsigned char music_music_data[];
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
-#define PROJECTILE_WAIT_TIME    16
-#define PROJECTILE_DISTANCE 4
+#define PROJECTILE_WAIT_TIME_ROLLER 16
+#define PROJECTILE_WAIT_TIME_CHARGER 64
+#define PROJECTILE_DISTANCE_ROLLER 4
+#define PROJECTILE_DISTANCE_CHARGER 16
+#define CHARGE_FRAMES   64
 #define TIMER_START     60
 #define TIMER_CYCLE     0x20
 
@@ -160,6 +163,8 @@ const unsigned char weapon_roller[] = "Roller";
 const unsigned char weapon_charger[] = "Charger";
 // Order weapons by their constants (see WPN_ROLLER, etc above)
 const unsigned char* const weapon_list[NUM_WPNS] = { weapon_roller, weapon_charger };
+const unsigned char weapon_ranges[] = { PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
+const unsigned char weapon_cooldown[] = { PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
 
 /* This is used to ensure the updatelist starts empty. */
 const unsigned char updateListData[]={
@@ -200,6 +205,7 @@ static unsigned char player_cooldown     [PLAYER_MAX];
 static unsigned char player_anim_cnt [PLAYER_MAX];
 static unsigned char player_diag_flip[PLAYER_MAX];
 static unsigned char player_wpn      [PLAYER_MAX];
+static unsigned char player_charge   [PLAYER_MAX];
 
 static unsigned int  projectile_x        [PLAYER_MAX];
 static unsigned int  projectile_y        [PLAYER_MAX];
@@ -839,7 +845,7 @@ void player_move(unsigned char id,unsigned char dir) {
      */
     map_type = map[MAP_ADR(px, py)];
 
-    if (can_ink(map_type)) {
+    if (player_wpn[id] == WPN_ROLLER && can_ink(map_type)) {
         set_tile_palette(px, py, id+1);
     }
 
@@ -856,12 +862,25 @@ void player_move(unsigned char id,unsigned char dir) {
  * Generate a projectile from a player.
  */
 void player_make_projectile(unsigned char id) {
-    if (!player_cooldown[id]) {
-        projectile_dist[id] = PROJECTILE_DISTANCE;
-        projectile_dir[id] = player_dir[id];
-        projectile_x[id] = player_x[id];
-        projectile_y[id] = player_y[id];
-        player_cooldown[id] = PROJECTILE_WAIT_TIME;
+    unsigned char map_type = 0;
+    if (player_cooldown[id]) return;
+
+    if (player_wpn[id] == WPN_CHARGER && player_charge[id] < CHARGE_FRAMES) {
+        ++player_charge[id];
+        return;
+    }
+    projectile_dist[id] = weapon_ranges[player_wpn[id]];
+    projectile_dir[id] = player_dir[id];
+    projectile_x[id] = player_x[id];
+    projectile_y[id] = player_y[id];
+    player_cooldown[id] = weapon_cooldown[player_wpn[id]];
+    player_charge[id] = 0;
+
+    px=projectile_x[id]>>(TILE_SIZE_BIT+FP_BITS);
+    py=projectile_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+    map_type = map[MAP_ADR(px, py)];
+    if (can_ink(map_type)) {
+        set_tile_palette(px, py, id+1);
     }
 }
 
@@ -948,6 +967,7 @@ void game_loop(void) {
                 player_wait      [player_all] = 16+((spr-TILE_PLAYERA)<<4);
                 player_cooldown  [player_all] = 0;
                 player_speed     [player_all] = 2<<FP_BITS;
+                player_charge    [player_all] = 0;
 
                 projectile_cnt   [player_all] = 0;
                 projectile_dir   [player_all] = DIR_NONE;
@@ -1134,7 +1154,7 @@ void game_loop(void) {
                 if (j&PAD_RIGHT) player_move(i,DIR_RIGHT);
                 if (j&PAD_UP)    player_move(i,DIR_UP);
                 if (j&PAD_DOWN)  player_move(i,DIR_DOWN);
-                if (j&PAD_A)     player_make_projectile(i);
+                if (j&PAD_A)     player_make_projectile(i); else player_charge[i] = 0;
             }
 
             /* If this player has a projectile, move it as well. */

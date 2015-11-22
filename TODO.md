@@ -4,7 +4,9 @@
 
 - Spawn invincibility (to prevent spawn camping)
 - Woomy
-- Chargers
+- ~~Chargers~~
+- Charging indicator
+- Weapon Balance
 - New SFX
 
 ## 1.2
