@@ -64,6 +64,8 @@ extern const unsigned char music_music_data[];
 #define PROJECTILE_WAIT_TIME_CHARGER 64
 #define PROJECTILE_DISTANCE_ROLLER 4
 #define PROJECTILE_DISTANCE_CHARGER 16
+#define PROJECTILE_SPEED_ROLLER 8<<FP_BITS
+#define PROJECTILE_SPEED_CHARGER 16<<FP_BITS
 #define CHARGE_FRAMES   64
 #define TIMER_START     60
 #define TIMER_CYCLE     0x20
@@ -163,6 +165,7 @@ const unsigned char weapon_roller[] = "Roller";
 const unsigned char weapon_charger[] = "Charger";
 // Order weapons by their constants (see WPN_ROLLER, etc above)
 const unsigned char* const weapon_list[NUM_WPNS] = { weapon_roller, weapon_charger };
+const unsigned int projectile_speed[] = { PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
 const unsigned char weapon_ranges[] = { PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
 const unsigned char weapon_cooldown[] = { PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
 
@@ -211,7 +214,6 @@ static unsigned int  projectile_x        [PLAYER_MAX];
 static unsigned int  projectile_y        [PLAYER_MAX];
 static unsigned char projectile_dir      [PLAYER_MAX];
 static int           projectile_cnt      [PLAYER_MAX];
-static unsigned int  projectile_speed    [PLAYER_MAX];
 static unsigned char projectile_dist [PLAYER_MAX];
 
 static unsigned char game_level;
@@ -971,7 +973,6 @@ void game_loop(void) {
 
                 projectile_cnt   [player_all] = 0;
                 projectile_dir   [player_all] = DIR_NONE;
-                projectile_speed [player_all] = 8<<FP_BITS;
 
                 ++player_all;
                 wait+=16;
@@ -1177,13 +1178,13 @@ void game_loop(void) {
 
             if (projectile_cnt[i]) {
                 switch (projectile_dir[i]) {
-                    case DIR_RIGHT: projectile_x[i]+=projectile_speed[i]; break;
-                    case DIR_LEFT:  projectile_x[i]-=projectile_speed[i]; break;
-                    case DIR_DOWN:  projectile_y[i]+=projectile_speed[i]; break;
-                    case DIR_UP:    projectile_y[i]-=projectile_speed[i]; break;
+                    case DIR_RIGHT: projectile_x[i]+=projectile_speed[player_wpn[i]]; break;
+                    case DIR_LEFT:  projectile_x[i]-=projectile_speed[player_wpn[i]]; break;
+                    case DIR_DOWN:  projectile_y[i]+=projectile_speed[player_wpn[i]]; break;
+                    case DIR_UP:    projectile_y[i]-=projectile_speed[player_wpn[i]]; break;
                 }
 
-                projectile_cnt[i]-=projectile_speed[i];
+                projectile_cnt[i]-=projectile_speed[player_wpn[i]];
             }
 
         }
