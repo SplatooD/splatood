@@ -1192,12 +1192,10 @@ void game_loop(void) {
         for (i = 0; i < player_all; ++i) {
             for (j = i + 1; j < player_all; ++j) {
                 if (player_x[i] == player_x[j] && player_y[i] == player_y[j]) {
-                    /*
-                     * Since all players have rollers and move at the same speed, if you
-                     * share a space you must have run into each other, so you both die.
-                     */
-                    player_die(i);
-                    player_die(j);
+                    // If you have a roller, kill the player you collide with
+                    // If both players have rollers, both of them die
+                    if (player_wpn[i] == WPN_ROLLER) player_die(j);
+                    if (player_wpn[j] == WPN_ROLLER) player_die(i);
                 }
                 if (projectile_dir[j] != DIR_NONE &&
                         (player_x[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) &&
