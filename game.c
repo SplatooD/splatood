@@ -235,6 +235,12 @@ void insert_into_update_list(unsigned char addr1, unsigned char addr2, unsigned 
 
 }
 
+void set_tile_at(unsigned int nametable, unsigned char x, unsigned char y, unsigned char value) {
+    unsigned char a = (nametable + y * 32) >> 8;
+    unsigned char b = y * 32 + x;
+    insert_into_update_list(a,b,value);
+}
+
 void clear_update_list() {
     update_list_index = 0;
     update_list[0] = NT_UPD_EOF;
@@ -440,7 +446,7 @@ void put_num(unsigned int adr,unsigned int num,unsigned char len) {
 }
 
 /**
- * Print a string (EBCDIC) into VRAM.
+ * Print a string into VRAM.
  * Use only between frames!
  */
 void print_str(unsigned int adr, const unsigned char * str) {
@@ -1252,8 +1258,47 @@ void game_loop(void) {
         player_score[i] = score_player(i);
     }
 
-    reset_palette_state();
+    /* Make sure the timer says 00 */
+    insert_into_update_list(0x20,0x50,timer%10 + 0xb0);
+    ppu_wait_frame();
+
+    /* Whistle */
+    sfx_play(SFX_START,0);
+
+    /* Stop battling! */
+    for (i = 0; i < 32; i += 8) {
+        for (j = 10; j < 13; ++j) {
+            clear_update_list();
+            set_tile_at(NAMETABLE_A,i+0,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+1,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+2,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+3,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+4,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+5,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+6,j,' '+0x80);
+            set_tile_at(NAMETABLE_A,i+7,j,' '+0x80);
+            ppu_wait_frame();
+        }
+        clear_update_list();
+        set_tile_palette(i/2+0,5,0);
+        set_tile_palette(i/2+1,5,0);
+        set_tile_palette(i/2+2,5,0);
+        set_tile_palette(i/2+3,5,0);
+        ppu_wait_frame();
+    }
+
+    clear_update_list();
+    set_tile_at(NAMETABLE_A,13,11,'G'+0x80);
+    set_tile_at(NAMETABLE_A,14,11,'A'+0x80);
+    set_tile_at(NAMETABLE_A,15,11,'M'+0x80);
+    set_tile_at(NAMETABLE_A,16,11,'E'+0x80);
+    set_tile_at(NAMETABLE_A,17,11,'!'+0x80);
+    set_tile_at(NAMETABLE_A,18,11,'!'+0x80);
+    ppu_wait_frame();
+
     delay(100);
+
+    reset_palette_state();
 }
 
 
