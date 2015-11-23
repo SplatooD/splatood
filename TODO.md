@@ -14,6 +14,9 @@
 - Four Score 2v2 support
 - Ammo
 - Squid mode
+- Better weapon select
+  - Animated Sprites
+  - Palettes to indicate selection
 
 ## 1.3
 
