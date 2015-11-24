@@ -384,3 +384,20 @@ const unsigned char judd_right[] = {
 
     128,
 };
+
+/* Sprites for unselected stuff */
+const unsigned char unselected_roller[] = {
+    0,-1,0x40,2,
+    8,-1,0x41,2,
+    0, 7,0x50,2,
+    8, 7,0x51,2,
+    128
+};
+
+const unsigned char unselected_charger[] = {
+    0,-1,0x00,2,
+    8,-1,0x01,2,
+    0, 7,0x10,2,
+    8, 7,0x11,2,
+    128
+};

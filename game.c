@@ -158,13 +158,7 @@ const unsigned char* const levelList[LEVELS_ALL*4]={
 };
 
 /* Weapon Select */
-const unsigned char select_weapon_1[] =  "Player 1 Select Weapon";
-const unsigned char select_weapon_2[] =  "Player 2 Select Weapon";
-const unsigned char* const select_weapon[] = { select_weapon_1, select_weapon_2 };
-const unsigned char weapon_roller[] = "Roller";
-const unsigned char weapon_charger[] = "Charger";
-// Order weapons by their constants (see WPN_ROLLER, etc above)
-const unsigned char* const weapon_list[NUM_WPNS] = { weapon_roller, weapon_charger };
+const unsigned char select_weapon[] =  "Select Weapon";
 const unsigned int projectile_speed[] = { PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
 const unsigned char weapon_ranges[] = { PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
 const unsigned char weapon_cooldown[] = { PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
@@ -184,7 +178,7 @@ static unsigned char palette_state[64];
 #pragma bssseg (push,"ZEROPAGE")
 #pragma dataseg(push,"ZEROPAGE")
 
-static unsigned char i,j,k;
+static unsigned char i,j;
 static unsigned char ptr,spr;
 static unsigned char px,py;
 static unsigned char wait;
@@ -518,58 +512,80 @@ void show_select_map() {
     }
 }
 
-/**
- * Weapon select screen.
+/*
+ * Two-player weapon select.
+ *
+ * This needs to be expanded to support more than two players,
+ * but I leave that as an exercise for later.
  */
-void show_select_weapon(unsigned char player_id) {
-    player_wpn[player_id] = WPN_ROLLER;
+void show_select_weapon(void) {
+    int player_id;
+    player_wpn[0] = WPN_ROLLER;
+    player_wpn[1] = WPN_ROLLER;
+
+    ppu_off();
+    pal_bg(palEndgame);
+    pal_spr(palCharacters);
+
+    /* We don't use an existing nametable, but instead clear out NAMETABLE_A */
+    vram_adr(NAMETABLE_A);
+    vram_fill(0xa0,1024-64);
+    vram_fill(0,64);
+
+    print_str(NAMETABLE_A+0x0E9,select_weapon);
+
+    oam_clear();
+
+    ppu_on_all();
+
     while (1) {
-        /* We disable the PPU while we draw text. */
-        ppu_off();
-        pal_bg(palEndgame);
+next:
 
-        /* We don't use an existing nametable, but instead clear out NAMETABLE_A */
-        vram_adr(NAMETABLE_A);
-        vram_fill(0xa0,1024-64);
-        vram_fill(0,64);
+#define A_HEIGHT 80
+#define B_HEIGHT 120
+#define LEFT     100
+#define RIGHT    140
 
-        print_str(NAMETABLE_A+0x0E7,select_weapon[player_id]);
-
-        /* Weapon names */
-        for (i = 0; i < NUM_WPNS; ++i) {
-            print_str(NAMETABLE_A+0x148+0x20*i,weapon_list[i]);
+        if (player_wpn[0] == WPN_ROLLER) {
+            oam_meta_spr(LEFT,  A_HEIGHT, 0<<4, SprPlayers[0][WPN_ROLLER][0][0]);
+            oam_meta_spr(RIGHT, A_HEIGHT, 1<<4, unselected_charger);
+        } else {
+            oam_meta_spr(LEFT,  A_HEIGHT, 0<<4, unselected_roller);
+            oam_meta_spr(RIGHT, A_HEIGHT, 1<<4, SprPlayers[0][WPN_CHARGER][0][0]);
         }
 
-        /*
-         * A squid represents the current selection.
-         */
-        print_str(NAMETABLE_A+0x146+0x20*player_wpn[player_id],selector);
-        ppu_on_bg();
+        if (player_wpn[1] == WPN_ROLLER) {
+            oam_meta_spr(LEFT,  B_HEIGHT, 2<<4, SprPlayers[1][WPN_ROLLER][0][0]);
+            oam_meta_spr(RIGHT, B_HEIGHT, 3<<4, unselected_charger);
+        } else {
+            oam_meta_spr(LEFT,  B_HEIGHT, 2<<4, unselected_roller);
+            oam_meta_spr(RIGHT, B_HEIGHT, 3<<4, SprPlayers[1][WPN_CHARGER][0][0]);
+        }
 
-        /* Loop waiting for input. */
         while (1) {
             ppu_wait_frame();
-            j = pad_trigger(player_id);
-            /* Start - Select weapon */
-            if (j & PAD_START) return;
-            /* Up - move cursor up */
-            if (j & PAD_UP) {
-                if (player_wpn[player_id] == 0) {
-                    player_wpn[player_id] = NUM_WPNS-1;
-                } else {
-                    player_wpn[player_id] -= 1;
-                }
+            for (player_id = 0; player_id < 2; player_id++) {
+                j = pad_trigger(player_id);
+                /* Start - Select weapon */
+                if (j & PAD_START) return;
+                /* Up - move cursor up */
+                if (j & PAD_UP) {
+                    if (player_wpn[player_id] == 0) {
+                        player_wpn[player_id] = NUM_WPNS-1;
+                    } else {
+                        player_wpn[player_id] -= 1;
+                    }
 
-                break;
-            }
-            /* Select or Down - move cursor down */
-            if (j & PAD_SELECT || j & PAD_DOWN) {
-                player_wpn[player_id] += 1;
-                if (player_wpn[player_id] == NUM_WPNS) player_wpn[player_id] = 0;
-                break;
+                    goto next;
+                }
+                /* Select or Down - move cursor down */
+                if (j & PAD_SELECT || j & PAD_LEFT || j & PAD_RIGHT) {
+                    player_wpn[player_id] += 1;
+                    if (player_wpn[player_id] == NUM_WPNS) player_wpn[player_id] = 0;
+                    goto next;
+                }
             }
         }
-
     }
 }
 
@@ -1246,9 +1262,7 @@ void main(void) {
         show_select_map();
 
         /* Select weapons */
-        for (k = 0; k < NUM_WPNS; ++k) {
-            show_select_weapon(k);
-        }
+        show_select_weapon();
 
         /* Start the game. */
         game_loop();
