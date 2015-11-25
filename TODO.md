@@ -8,9 +8,9 @@
 - Charging indicator
 - Weapon Balance
 - ~~New SFX~~
-- Better weapon select
-  - Animated Sprites
-  - Palettes to indicate selection
+- ~~Better weapon select~~
+  - ~~Animated Sprites~~
+  - ~~Palettes to indicate selection~~
 
 ## 1.2
 
