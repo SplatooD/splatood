@@ -105,8 +105,8 @@ const unsigned char palCharacters[8]={ 0x0f,0x04,0x30,0x0f,0x0f,0x19,0x30,0x0f }
 const unsigned char palCharPaused[8] = {0x0f,0x00,0x2d,0x0f,0x0f,0x00,0x2d,0x0f};
 const unsigned char palJudd[]={ 0x0f,0x26,0x27,0x30,0x0f,0x14,0x27,0x30,0x0f,0x2a,0x27,0x30,0x0f,0x26,0x27,0x30 };
 
-                                  /* v   1   .   0   .   4  */
-const unsigned char versionStr[] = {230,232,241,231,241,235};
+                                  /* v   1   .   0   .   5  */
+const unsigned char versionStr[] = {230,232,241,231,241,236};
 const unsigned char victoryMsg[] = "Victory!";
 const unsigned char fourSpaces[] = "    ";
 const unsigned char tieMsg[] = "It's a tie!";
