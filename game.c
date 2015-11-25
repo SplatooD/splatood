@@ -550,6 +550,8 @@ void show_select_weapon(void) {
 
     ppu_on_all();
 
+    anim_frame = 0;
+
     while (1) {
 next:
 
@@ -559,23 +561,26 @@ next:
 #define RIGHT    140
 
         if (player_wpn[0] == WPN_ROLLER) {
-            oam_meta_spr(LEFT,  A_HEIGHT, 0<<4, SprPlayers[0][WPN_ROLLER][0][0]);
+            oam_meta_spr(LEFT,  A_HEIGHT, 0<<4, SprPlayers[0][WPN_ROLLER][0][anim_frame]);
             oam_meta_spr(RIGHT, A_HEIGHT, 1<<4, unselected_charger);
         } else {
             oam_meta_spr(LEFT,  A_HEIGHT, 0<<4, unselected_roller);
-            oam_meta_spr(RIGHT, A_HEIGHT, 1<<4, SprPlayers[0][WPN_CHARGER][0][0]);
+            oam_meta_spr(RIGHT, A_HEIGHT, 1<<4, SprPlayers[0][WPN_CHARGER][0][anim_frame]);
         }
 
         if (player_wpn[1] == WPN_ROLLER) {
-            oam_meta_spr(LEFT,  B_HEIGHT, 2<<4, SprPlayers[1][WPN_ROLLER][0][0]);
+            oam_meta_spr(LEFT,  B_HEIGHT, 2<<4, SprPlayers[1][WPN_ROLLER][0][anim_frame]);
             oam_meta_spr(RIGHT, B_HEIGHT, 3<<4, unselected_charger);
         } else {
             oam_meta_spr(LEFT,  B_HEIGHT, 2<<4, unselected_roller);
-            oam_meta_spr(RIGHT, B_HEIGHT, 3<<4, SprPlayers[1][WPN_CHARGER][0][0]);
+            oam_meta_spr(RIGHT, B_HEIGHT, 3<<4, SprPlayers[1][WPN_CHARGER][0][anim_frame]);
         }
 
-        while (1) {
+        i = 0;
+        anim_frame = 1 - anim_frame;
+        while (i < 10) {
             ppu_wait_frame();
+            i++;
             for (player_id = 0; player_id < 2; player_id++) {
                 j = pad_trigger(player_id);
                 /* Start - Select weapon */
