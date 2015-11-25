@@ -110,7 +110,6 @@ const unsigned char versionStr[] = {230,232,241,231,241,235};
 const unsigned char victoryMsg[] = "Victory!";
 const unsigned char fourSpaces[] = "    ";
 const unsigned char tieMsg[] = "It's a tie!";
-const unsigned char selector[] = "*";
 const unsigned char zero[]={0};
 
 const unsigned char credits_0[]  = "      SplatooD";
@@ -461,38 +460,44 @@ void show_select_map() {
     bank_spr(1);
     music_play(MUSIC_STAGE_SELECT);
 
+    ppu_off();
+    pal_bg(palEndgame);
+
+    /* We don't use an existing nametable, but instead clear out NAMETABLE_A */
+    vram_adr(NAMETABLE_A);
+    vram_fill(0xa0,1024-64);
+    vram_fill(0,64);
+
+    /* "Select Map" */
+    print_str(NAMETABLE_A+0x0EB,select_map);
+
+    /* Map names */
+    for (i = 0; i < LEVELS_ALL; ++i) {
+        print_str(NAMETABLE_A+0x148+0x20*i,levelList[i*LEVEL_ENTRY+3]);
+    }
+
+    ppu_on_bg();
+
+    clear_update_list();
+    set_vram_update(update_list);
+
     while (1) {
-        /* We disable the PPU while we draw text. */
-        ppu_off();
-        pal_bg(palEndgame);
-
-        /* We don't use an existing nametable, but instead clear out NAMETABLE_A */
-        vram_adr(NAMETABLE_A);
-        vram_fill(0xa0,1024-64);
-        vram_fill(0,64);
-
-        /* "Select Map" */
-        print_str(NAMETABLE_A+0x0EB,select_map);
-
-        /* Map names */
-        for (i = 0; i < LEVELS_ALL; ++i) {
-            print_str(NAMETABLE_A+0x148+0x20*i,levelList[i*LEVEL_ENTRY+3]);
-        }
-
         /*
          * A squid represents the current selection.
          */
-        print_str(NAMETABLE_A+0x146+0x20*game_level,selector);
-        ppu_on_bg();
+        int tmp = NAMETABLE_A + 0x146 + 0x20 * game_level;
+        insert_into_update_list(tmp>>8,tmp&0xFF,'*'+0x80);
 
         /* Loop waiting for input. */
         while (1) {
             ppu_wait_frame();
+            clear_update_list();
             j = pad_trigger(0) | pad_trigger(1);
             /* Start - Select map */
             if (j & PAD_START) return;
             /* Up - move cursor up */
             if (j & PAD_UP) {
+                insert_into_update_list(tmp>>8,tmp&0xFF,' '+0x80);
                 if (game_level == 0) {
                     game_level = LEVELS_ALL-1;
                 } else {
@@ -503,6 +508,7 @@ void show_select_map() {
             }
             /* Select or Down - move cursor down */
             if (j & PAD_SELECT || j & PAD_DOWN) {
+                insert_into_update_list(tmp>>8,tmp&0xFF,' '+0x80);
                 game_level += 1;
                 if (game_level == LEVELS_ALL) game_level = 0;
                 break;
