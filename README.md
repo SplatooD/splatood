@@ -2,6 +2,10 @@
 
 ![screenshot](http://i.imgur.com/jGOvsaF.png)
 
+## Game Manual
+
+Check out http://splatood.github.io/
+
 ## Controls
 
 D-pad to move, A to flick roller or fire charger, START to pause. Menus accept D-pad to move cursor and START to select an item.
