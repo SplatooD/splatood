@@ -1,6 +1,6 @@
 # SplatooD: A Splatoon demake for NES
 
-![screenshot](http://i.imgur.com/jGOvsaF.png)
+![s](https://i.imgur.com/E1oPhVa.png) ![screenshot](http://i.imgur.com/jGOvsaF.png) ![s](https://i.imgur.com/y7Z1OsG.png)
 
 ## Game Manual
 
