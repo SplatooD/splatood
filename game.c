@@ -1065,7 +1065,7 @@ void game_loop(void) {
                 case DIR_UP: spr_dir = SPR_UP; break;
             }
             oam_meta_spr(
-                px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame],
+                px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame]
             );
             spr-=16;
         }
