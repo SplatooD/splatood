@@ -208,6 +208,7 @@ static unsigned char player_wpn      [PLAYER_MAX];
 static unsigned char player_charge   [PLAYER_MAX];
 
 static unsigned char player_ai [PLAYER_MAX];
+static unsigned char ai_aggression[PLAYER_MAX];
 const unsigned char dirs[4]={ DIR_LEFT,DIR_UP,DIR_RIGHT,DIR_DOWN }; //basic maze strategy: always turn right
 
 static unsigned int  projectile_x        [PLAYER_MAX];
@@ -572,7 +573,9 @@ void show_select_weapon(void) {
 
     anim_frame = 0;
 
-    //default ai for player 2
+    //default aggressive ai for player 2
+    ai_aggression[0]=1;
+    ai_aggression[1]=1;
     player_ai[0]=0;
     player_ai[1]=1;
 
@@ -1020,10 +1023,11 @@ void player_die(unsigned char id) {
 }
 
 /**
- * AI movement.
+ * AI movement with aggressive weapon mode.
  */
 unsigned char ai_move(unsigned char id){
   unsigned char diri,dirv,dirtest;
+  unsigned char px2,py2;
   if(player_dir[id]==DIR_NONE) j=rand8()%4; //random start direction
   else j=player_dir_index[id]; //prefer movements in the same direction
   diri=255; dirv=0;
@@ -1034,7 +1038,34 @@ unsigned char ai_move(unsigned char id){
   }
   if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
   else j=dirs[diri%4];
-  if(rand8()<16) j=PAD_A; //random weapon usage as ai is not aware of enemy positions yet
+
+  if((player_cooldown[id]==0)&&(ai_aggression[id]>=1)){
+   px=player_x_spawn[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+   py=player_y_spawn[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+   px2=player_x[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+   py2=player_y[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+   if((px!=px2)||(py!=py2)){ //dont try to kill enemy in spawn
+	px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
+	py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+	  if(px==px2){
+	   if(py>py2){
+	    if(py-py2<=3){
+	     if(player_dir[id]==DIR_UP){ j=PAD_A; }
+	     else if(player_move_test(id,1)>0){ j=dirs[1]; }
+	   }}else if(py2-py<=3){
+	    if(player_dir[id]==DIR_DOWN){ j=PAD_A; }
+	    else if(player_move_test(id,3)>0){ j=dirs[3]; }
+	  }}else if(py==py2){
+	   if(px>px2){
+	    if(px-px2<=3){
+	     if(player_dir[id]==DIR_LEFT){ j=PAD_A; }
+	     else if((player_move_test(id,0)>0)){ j=dirs[0]; }
+	   }}else if(px2-px<=3){
+	    if(player_dir[id]==DIR_RIGHT){ j=PAD_A; }
+	    else if(player_move_test(id,2)>0){ j=dirs[2]; }
+	  }}
+  }}
+  
  return j;
 }
 
