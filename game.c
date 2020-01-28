@@ -127,11 +127,13 @@ const unsigned char credits_10[] = "      Graphics";
 const unsigned char credits_11[] = "    Squid Meier";
 const unsigned char credits_12[] = "   Game Mechanics";
 const unsigned char credits_13[] = "  American McGill";
-const unsigned char credits_14[] = " Splatoon (C) 2015";
-const unsigned char credits_15[] = "      Nintendo";
-const unsigned char credits_16[] = "Thanks for playing!";
+const unsigned char credits_14[] = "   AI Programming";
+const unsigned char credits_15[] = "  Simon U. Richter";
+const unsigned char credits_16[] = " Splatoon (C) 2015";
+const unsigned char credits_17[] = "      Nintendo";
+const unsigned char credits_18[] = "Thanks for playing!";
 
-const unsigned char * credits[] = { credits_0, credits_1, credits_2, credits_3, credits_4, credits_5, credits_6, credits_7, credits_8, credits_9, credits_10, credits_11, credits_12, credits_13, credits_14, credits_15, credits_16, zero, zero, zero };
+const unsigned char * credits[] = { credits_0, credits_1, credits_2, credits_3, credits_4, credits_5, credits_6, credits_7, credits_8, credits_9, credits_10, credits_11, credits_12, credits_13, credits_14, credits_15, credits_16, credits_17, credits_18, zero, zero, zero };
 
 const unsigned char select_map[] = "Select Map";
 const unsigned char level_kelpdome[] = "Kelp Dome";
@@ -652,7 +654,7 @@ void show_credits() {
 
     sum = NAMETABLE_C;
 
-    while (i < 17) { /* 4 6 A C */
+    while (i < 19) { /* 4 6 A C */
         ppu_wait_nmi();
         ppu_off();
         vram_adr(sum);
