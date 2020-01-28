@@ -1019,13 +1019,31 @@ void player_die(unsigned char id) {
     sfx_play(SFX_DEATH,0);
 }
 
+/**
+ * AI movement.
+ */
+unsigned char ai_move(unsigned char id){
+  unsigned char diri,dirv,dirtest;
+  if(player_dir[id]==DIR_NONE) j=rand8()%4; //random start direction
+  else j=player_dir_index[id]; //prefer movements in the same direction
+  diri=255; dirv=0;
+  for(k=0;k<4;k++){
+   dirtest=player_move_test(id,j+k);
+   if(dirtest>dirv){dirv=dirtest; diri=j+k; if(dirtest==4) break;}
+   else if((dirtest==dirv)&&(dirv==1)&&(rand8()<8)){dirv=dirtest; diri=j+k;}
+  }
+  if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
+  else j=dirs[diri%4];
+  if(rand8()<16) j=PAD_A; //random weapon usage as ai is not aware of enemy positions yet
+ return j;
+}
+
 
 /**
  * Main gameplay loop.
  */
 void game_loop(void) {
     unsigned char map_type;
-    unsigned char diri,dirv,dirtest;
 
     ppu_off();
 
@@ -1257,17 +1275,7 @@ void game_loop(void) {
 
 		if(player_ai[i]!=0){
 		 // AI
-		 if(player_dir[i]==DIR_NONE) j=rand8()%4; //random start direction
-		 else j=player_dir_index[i]; //prefer movements in the same direction
-		 diri=255; dirv=0;
-		 for(k=0;k<4;k++){
-		  dirtest=player_move_test(i,j+k);
-		  if(dirtest>dirv){dirv=dirtest; diri=j+k; if(dirtest==4) break;}
-		  else if((dirtest==dirv)&&(dirv==1)&&(rand8()<8)){dirv=dirtest; diri=j+k;}
-		 }
-		 if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
-		 else j=dirs[diri%4];
-		 if(rand8()<16) j=PAD_A; //random weapon usage as ai is not aware of enemy positions yet
+		 j=ai_move(i);
 		}else{
                  /* Read pad state if ai is disabled. */
                  j = pad_state(i);
