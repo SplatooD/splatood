@@ -57,6 +57,7 @@ extern const unsigned char music_music_data[];
 #define NUM_WPNS        2
 #define WPN_ROLLER      0
 #define WPN_CHARGER     1
+//#define WPN_AI		2
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
@@ -177,7 +178,7 @@ static unsigned char palette_state[64];
 #pragma bss-name (push,"ZEROPAGE")
 #pragma data-name (push,"ZEROPAGE")
 
-static unsigned char i,j;
+static unsigned char i,j,k;
 static unsigned char ptr,spr;
 static unsigned char px,py;
 static unsigned char wait;
@@ -193,6 +194,7 @@ static unsigned int  player_y_spawn [PLAYER_MAX];
 
 static unsigned int  player_x        [PLAYER_MAX];
 static unsigned int  player_y        [PLAYER_MAX];
+static unsigned char player_dir_index [PLAYER_MAX];
 static unsigned char player_dir      [PLAYER_MAX];
 static int           player_cnt      [PLAYER_MAX];
 static unsigned int  player_speed    [PLAYER_MAX];
@@ -202,6 +204,9 @@ static unsigned char player_anim_cnt [PLAYER_MAX];
 static unsigned char player_diag_flip[PLAYER_MAX];
 static unsigned char player_wpn      [PLAYER_MAX];
 static unsigned char player_charge   [PLAYER_MAX];
+
+static unsigned char player_ai [PLAYER_MAX];
+const unsigned char dirs[4]={ DIR_LEFT,DIR_UP,DIR_RIGHT,DIR_DOWN }; //basic maze strategy: always turn right
 
 static unsigned int  projectile_x        [PLAYER_MAX];
 static unsigned int  projectile_y        [PLAYER_MAX];
@@ -248,7 +253,20 @@ void clear_update_list() {
 
 
 /**
- * Set the pallete for a tile in the attribute table.
+ * Get the palette value for a tile in the attribute table.
+ */
+unsigned char get_tile_palette(unsigned char x_idx, unsigned char y_idx) {
+    unsigned char palette_mask;
+    unsigned char palette_address;
+    unsigned char palette_shift_val;
+    palette_address =  (y_idx / 2) * 8 + x_idx / 2;
+    palette_shift_val = (y_idx % 2)*4 + (x_idx % 2)*2;
+    palette_mask = (0x03 << palette_shift_val);
+    return (palette_state[palette_address]&palette_mask)>>palette_shift_val;
+}
+
+/**
+ * Set the palette value for a tile in the attribute table.
  */
 void set_tile_palette(unsigned char x_idx, unsigned char y_idx, unsigned char value) {
     unsigned char palette_mask;
@@ -552,6 +570,10 @@ void show_select_weapon(void) {
 
     anim_frame = 0;
 
+    //default ai for player 2
+    player_ai[0]=0;
+    player_ai[1]=1;
+
     while (1) {
 next:
 
@@ -583,6 +605,7 @@ next:
             i++;
             for (player_id = 0; player_id < 2; player_id++) {
                 j = pad_trigger(player_id);
+		if((j!=0)&&(player_id==1)) player_ai[player_id]=0; //disable ai if player 2 presses any key at weapon select screen
                 /* Start - Select weapon */
                 if (j & PAD_START) return;
                 /* Up - move cursor up */
@@ -773,7 +796,7 @@ void show_endgame(void) {
 }
 
 /* 
- * Move a projectile if the is no wall
+ * Move a projectile if there is no wall
  */
 void projectile_move(unsigned char id) {
     unsigned char map_type = 0;
@@ -830,19 +853,77 @@ void projectile_move(unsigned char id) {
 
 
 /**
+ * Player movement test.
+ *
+ * Allows AI to test movement directions without actual movement.
+ */
+unsigned char player_move_test(unsigned char id,unsigned char dir_index) {
+    unsigned char map_type = 0;
+    /*if (player_cooldown[id]) {
+        return 0;
+    }*/
+
+    px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
+    py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+
+    switch (dir_index%4) {
+        case 0:  --px; break;
+        case 2: ++px; break;
+        case 1:    --py; break;
+        case 3:  ++py; break;
+    }
+
+
+    if (px > MAP_WDT-1) {
+            return 0;
+    }
+
+    if (py > MAP_HGT-1) {
+            return 0;
+    }
+
+    /*
+     * Wall tiles:
+     * 0x22~0x29
+     * 0x32~0x39
+     */
+    map_type = map[MAP_ADR(px, py)];
+
+	//inkable
+    if((can_ink(map_type)) && (get_tile_palette(px,py)!=id+1)){
+	//set_tile_palette(2,2,id);
+        return 2;
+    }
+
+	//wall
+    if ((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) {
+            return 0;
+    }
+
+	//water
+    if (map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) {
+     return 0;
+    }
+ 
+    return 1;
+}
+
+
+/**
  * Player movement.
  *
  * Player movement is tile-by-tile with an animation between
  * tiles that we need to initialize.
  */
-void player_move(unsigned char id,unsigned char dir) {
+void player_move(unsigned char id,unsigned char dir_index) {
     unsigned char map_type = 0;
     if (player_cooldown[id]) {
         return;
     }
 
     /* We always set direction so sprites update facing */
-    player_dir[id]=dir;
+    player_dir_index[id]=dir_index;
+    player_dir[id]=dirs[dir_index];
 
     /* A pad direction is being held, so animate */
     player_anim_cnt[id] += 1;
@@ -857,11 +938,11 @@ void player_move(unsigned char id,unsigned char dir) {
     px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
     py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
 
-    switch (dir) {
-        case DIR_LEFT:  --px; break;
-        case DIR_RIGHT: ++px; break;
-        case DIR_UP:    --py; break;
-        case DIR_DOWN:  ++py; break;
+    switch (dir_index) {
+        case 0:  --px; break;
+        case 2: ++px; break;
+        case 1:    --py; break;
+        case 3:  ++py; break;
     }
 
 
@@ -941,6 +1022,7 @@ void player_die(unsigned char id) {
  */
 void game_loop(void) {
     unsigned char map_type;
+    unsigned char diri;
 
     ppu_off();
 
@@ -1170,8 +1252,22 @@ void game_loop(void) {
             /* No current movement, accept input. */
             if (!player_cnt[i]) {
 
-                /* Read pad state. */
-                j = pad_state(i);
+		if(player_ai[i]==1){
+		 // AI
+		 if(player_dir[i]==DIR_NONE) j=rand8()%4; //random start direction
+		 else j=player_dir_index[i]; //prefer movements in the same direction
+		 diri=255;
+		 for(k=0;k<8;k++){
+		  if(player_move_test(i,j+k)==2){ diri=j+k; break;} //prefer inkable uninked directions
+		  if((diri==255)&&(player_move_test(i,j+k)==1)) diri=j+k; //prefer movement over walls/water
+		 }
+		 if(diri==255) j=PAD_A; //if no movement is possible just fire weapon
+		 else j=dirs[diri%4];
+		 if(rand8()<16) j=PAD_A; //random weapon usage as ai is not aware of enemy positions yet
+		}else{
+                 /* Read pad state if ai is disabled. */
+                 j = pad_state(i);
+		}
 
                 if (player_cooldown[i]) {
                     player_cooldown[i] -= 1;
@@ -1181,13 +1277,13 @@ void game_loop(void) {
                     /* Give priority new new direction (useful for cornering) */
                     j &= ~player_dir[i];
                     player_diag_flip[i] = 0;
-                    player_move(i, player_dir[i]);
+                    player_move(i, player_dir_index[i]);
                 }
 
-                if (j&PAD_LEFT)  player_move(i,DIR_LEFT);
-                if (j&PAD_RIGHT) player_move(i,DIR_RIGHT);
-                if (j&PAD_UP)    player_move(i,DIR_UP);
-                if (j&PAD_DOWN)  player_move(i,DIR_DOWN);
+                if (j&PAD_LEFT)  player_move(i,0);
+                if (j&PAD_RIGHT) player_move(i,2);
+                if (j&PAD_UP)    player_move(i,1);
+                if (j&PAD_DOWN)  player_move(i,3);
                 if (j&PAD_A)     player_make_projectile(i); else player_charge[i] = 0;
             }
 
