@@ -174,8 +174,8 @@ static unsigned char palette_state[64];
 
 /* All the globals after this end up in the zeropage. */
 
-#pragma bssseg (push,"ZEROPAGE")
-#pragma dataseg(push,"ZEROPAGE")
+#pragma bss-name (push,"ZEROPAGE")
+#pragma data-name (push,"ZEROPAGE")
 
 static unsigned char i,j;
 static unsigned char ptr,spr;
