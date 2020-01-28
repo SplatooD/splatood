@@ -861,6 +861,8 @@ void projectile_move(unsigned char id) {
  */
 unsigned char player_move_test(unsigned char id,unsigned char dir_index) {
     unsigned char map_type = 0;
+    unsigned char tile_palette;
+    unsigned char is_wall=0;
     /*if (player_cooldown[id]) {
         return 0;
     }*/
@@ -891,23 +893,22 @@ unsigned char player_move_test(unsigned char id,unsigned char dir_index) {
      */
     map_type = map[MAP_ADR(px, py)];
 
-	//inkable
-    if((can_ink(map_type)) && (get_tile_palette(px,py)!=id+1)){
-	//set_tile_palette(2,2,id);
-        return 2;
-    }
-
-	//wall
-    if ((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) {
-            return 0;
-    }
-
 	//water
-    if (map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) {
-     return 0;
-    }
+    if(map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) return 0;
  
-    return 1;
+    if((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) is_wall=1;
+
+	//inkable
+    if(can_ink(map_type)){
+
+     tile_palette=get_tile_palette(px,py);
+
+     if(tile_palette==id+1) return 1-is_wall; //already inked
+     if(tile_palette==2-id) return 4; //enemy ink
+     else return 3-is_wall; //uninked
+    }
+
+    return 0;
 }
 
 
@@ -1024,7 +1025,7 @@ void player_die(unsigned char id) {
  */
 void game_loop(void) {
     unsigned char map_type;
-    unsigned char diri;
+    unsigned char diri,dirv,dirtest;
 
     ppu_off();
 
@@ -1254,16 +1255,17 @@ void game_loop(void) {
             /* No current movement, accept input. */
             if (!player_cnt[i]) {
 
-		if(player_ai[i]==1){
+		if(player_ai[i]!=0){
 		 // AI
 		 if(player_dir[i]==DIR_NONE) j=rand8()%4; //random start direction
 		 else j=player_dir_index[i]; //prefer movements in the same direction
-		 diri=255;
+		 diri=255; dirv=0;
 		 for(k=0;k<4;k++){
-		  if(player_move_test(i,j+k)==2){ diri=j+k; break;} //prefer inkable uninked directions
-		  if((diri==255)&&(player_move_test(i,j+k)==1)) diri=j+k; //prefer movement over walls/water
+		  dirtest=player_move_test(i,j+k);
+		  if(dirtest>dirv){dirv=dirtest; diri=j+k; if(dirtest==4) break;}
+		  else if((dirtest==dirv)&&(dirv==1)&&(rand8()<8)){dirv=dirtest; diri=j+k;}
 		 }
-		 if(diri==255) j=PAD_A; //if no movement is possible just fire weapon
+		 if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
 		 else j=dirs[diri%4];
 		 if(rand8()<16) j=PAD_A; //random weapon usage as ai is not aware of enemy positions yet
 		}else{
