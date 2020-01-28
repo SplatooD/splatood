@@ -1259,7 +1259,7 @@ void game_loop(void) {
 		 if(player_dir[i]==DIR_NONE) j=rand8()%4; //random start direction
 		 else j=player_dir_index[i]; //prefer movements in the same direction
 		 diri=255;
-		 for(k=0;k<8;k++){
+		 for(k=0;k<4;k++){
 		  if(player_move_test(i,j+k)==2){ diri=j+k; break;} //prefer inkable uninked directions
 		  if((diri==255)&&(player_move_test(i,j+k)==1)) diri=j+k; //prefer movement over walls/water
 		 }
