@@ -1001,7 +1001,7 @@ void player_move(unsigned char id,unsigned char dir_index) {
     player_diag_flip[id]=1;
     //APU.pulse[0].control=0x12;
 
-    sfx_play(SFX_SPLAT+((player_dist(0,1)>>2)%4),0); //positional audio
+    sfx_play(SFX_SPLAT+((player_dist(0,1)>>3)&0x3),0); //positional audio for maximum player distance of 31
 }
 
 /**
