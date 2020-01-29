@@ -7,6 +7,12 @@
 /* NESlib */
 #include "neslib.h"
 
+/* Low Level NES Api */
+#define __NES__
+//#include "nes.h"
+
+#include <stdlib.h>
+
 /* Name tables */
 #include "levels/splat_title.h"
 
@@ -80,8 +86,11 @@ extern const unsigned char music_music_data[];
 /* Sound effects */
 #define SFX_START       0
 #define SFX_SPLAT       1
-#define SFX_RESPAWN1    2
-#define SFX_DEATH       3
+#define SFX_SPLAT_VOL3  2
+#define SFX_SPLAT_VOL2  3
+#define SFX_SPLAT_VOL1  4
+#define SFX_RESPAWN1    5
+#define SFX_DEATH       6
 
 /* Music */
 #define MUSIC_LEVEL         0
@@ -185,7 +194,7 @@ static unsigned char ptr,spr;
 static unsigned char px,py;
 static unsigned char wait;
 static unsigned int i16;
-static unsigned int  sum,div;
+static unsigned int sum,divvar;
 
 static unsigned char nameRow[32];
 
@@ -648,7 +657,7 @@ void show_credits() {
     /* Write credits. */
     i = 0;
     j = 0;
-    div = 0;
+    divvar = 0;
 
     /* Clear the scrolling nametables, A and C */
     vram_adr(NAMETABLE_C);
@@ -670,17 +679,17 @@ void show_credits() {
         ppu_on_all();
 
         do {
-            scroll(0,div);
+            scroll(0,divvar);
 
             /* Judd as a sprite. */
-            if (i == 0 && div < 0x62) {
-                oam_meta_spr(0x70,0x48-div,0,(char*)i16);
+            if (i == 0 && divvar < 0x62) {
+                oam_meta_spr(0x70,0x48-divvar,0,(char*)i16);
             }
 
-            div++;
+            divvar++;
             WAIT_WITH_SKIP(1);
-        } while (div % 240);
-        if (div == 480) div = 0;
+        } while (divvar % 240);
+        if (divvar == 480) divvar = 0;
 
         if (sum == NAMETABLE_A) sum = NAMETABLE_C;
         else sum = NAMETABLE_A;
@@ -695,10 +704,10 @@ void show_credits() {
     vram_fill(0xa0,1024-64);
     ppu_on_all();
 
-    while (div % 240 < 100) {
+    while (divvar % 240 < 100) {
         WAIT_WITH_SKIP(1);
-        scroll(0,div);
-        div++;
+        scroll(0,divvar);
+        divvar++;
     }
 
 _skip_title:
@@ -739,19 +748,19 @@ void show_endgame(void) {
     sum = (player_score[0] + player_score[1]);
 
     /* Calculate percentage for player 1 */
-    div = player_score[0] * 100;
-    div /= sum;
-    if (div == 100) div = 99;
-    if (div == 0) div = 1;
-    put_num(NAMETABLE_A+0x1EA,div,2);
+    divvar = player_score[0] * 100;
+    divvar /= sum;
+    if (divvar == 100) divvar = 99;
+    if (divvar == 0) divvar = 1;
+    put_num(NAMETABLE_A+0x1EA,divvar,2);
 
     /* Player 2 must be 100% - (player 1) */
-    div = 100 - div;
-    put_num(NAMETABLE_A+0x1F4,div,2);
+    divvar = 100 - divvar;
+    put_num(NAMETABLE_A+0x1F4,divvar,2);
 
     /* Convert Player 2's percentage to a gauge width */
-    div *= 9;
-    div /= 100;
+    divvar *= 9;
+    divvar /= 100;
 
     /* Print the victory message. */
     if (player_score[0] > player_score[1]) {
@@ -780,11 +789,11 @@ void show_endgame(void) {
 
     /* Set the gauge palettes. */
     clear_update_list();
-    for (i = 4; i < 12 - div; ++i) {
+    for (i = 4; i < 12 - divvar; ++i) {
         /* Player 1 on the left. */
         set_tile_palette(i,8,1);
     }
-    for (i = 12 - div; i <= 11; ++i) {
+    for (i = 12 - divvar; i <= 11; ++i) {
         /* Player 2 on the right. */
         set_tile_palette(i,8,2);
 
@@ -856,6 +865,19 @@ void projectile_move(unsigned char id) {
     projectile_cnt[id]=TILE_SIZE<<FP_BITS;
 }
 
+
+/**
+ * Calculate player distance
+ *
+ * Uses Manhattan metric
+ */
+unsigned int player_dist(unsigned char id1, unsigned char id2){
+   int px2=player_x[id1]>>(TILE_SIZE_BIT+FP_BITS);
+   int py2=player_y[id1]>>(TILE_SIZE_BIT+FP_BITS);
+   int px=player_x[id2]>>(TILE_SIZE_BIT+FP_BITS);
+   int py=player_y[id2]>>(TILE_SIZE_BIT+FP_BITS);
+   return abs(px2-px)+abs(py2-py);
+}
 
 /**
  * Player movement test.
@@ -977,7 +999,9 @@ void player_move(unsigned char id,unsigned char dir_index) {
 
     player_cnt[id]=TILE_SIZE<<FP_BITS;
     player_diag_flip[id]=1;
-    sfx_play(SFX_SPLAT,0);
+    //APU.pulse[0].control=0x12;
+
+    sfx_play(SFX_SPLAT+((player_dist(0,1)>>2)%4),0); //positional audio
 }
 
 /**

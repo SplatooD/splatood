@@ -1,4 +1,4 @@
-;FamiTone2 v1.11
+;FamiTone2 v1.12
 
 
 
@@ -35,7 +35,7 @@ FT_TEMP_PTR			= FT_TEMP		;word
 FT_TEMP_PTR_L		= FT_TEMP_PTR+0
 FT_TEMP_PTR_H		= FT_TEMP_PTR+1
 FT_TEMP_VAR1		= FT_TEMP+2
-
+FT_TEMP_SIZE        = 3
 
 ;envelope structure offsets, 5 bytes per envelope, grouped by variable type
 
@@ -148,6 +148,7 @@ FT_SFX_PTR_H		= FT_SFX_BASE_ADR+2
 FT_SFX_OFF			= FT_SFX_BASE_ADR+3
 FT_SFX_BUF			= FT_SFX_BASE_ADR+4	;11 bytes
 
+FT_BASE_SIZE 		= FT_SFX_BUF+11-FT_BASE_ADR
 
 ;aliases for sound effect channels to use in user calls
 
@@ -318,7 +319,7 @@ FamiToneMusicStop:
 
 	bne @set_envelopes
 
-	rts
+	jmp FamiToneSampleStop
 
 
 ;------------------------------------------------------------------------------
@@ -409,7 +410,11 @@ FamiToneMusicPause:
 
 	tax					;set SZ flags for A
 	beq @unpause
+	
 @pause:
+
+	jsr FamiToneSampleStop
+	
 	lda #0				;mute sound
 	sta FT_CH1_VOLUME
 	sta FT_CH2_VOLUME
@@ -926,8 +931,6 @@ _FT2ChannelUpdate:
 	rts
 
 
-	.if(FT_DPCM_ENABLE)
-
 
 ;------------------------------------------------------------------------------
 ; stop DPCM sample if it plays
@@ -940,6 +943,9 @@ FamiToneSampleStop:
 
 	rts
 
+
+	
+	.if(FT_DPCM_ENABLE)
 
 ;------------------------------------------------------------------------------
 ; play DPCM sample, used by music player, could be used externally
@@ -1015,23 +1021,26 @@ _FT2SamplePlay:
 
 FamiToneSfxInit:
 
+	stx <FT_TEMP_PTR_L
+	sty <FT_TEMP_PTR_H
+	
+	ldy #0
+	
 	.if(FT_PITCH_FIX)
 
 	lda FT_PAL_ADJUST		;add 2 to the sound list pointer for PAL
 	bne @ntsc
-	inx
-	bne @no_inc1
 	iny
-@no_inc1:
-	inx
-	bne @ntsc
 	iny
 @ntsc:
 
 	.endif
-
-	stx FT_SFX_ADR_L		;remember pointer to the data
-	sty FT_SFX_ADR_H
+	
+	lda (FT_TEMP_PTR),y		;read and store pointer to the effects list
+	sta FT_SFX_ADR_L
+	iny
+	lda (FT_TEMP_PTR),y
+	sta FT_SFX_ADR_H
 
 	ldx #FT_SFX_CH0			;init all the streams
 
@@ -1068,14 +1077,13 @@ _FT2SfxClearChannel:
 
 ;------------------------------------------------------------------------------
 ; play sound effect
-; in: A is a number of the sound effect
+; in: A is a number of the sound effect 0..127
 ;     X is offset of sound effect channel, should be FT_SFX_CH0..FT_SFX_CH3
 ;------------------------------------------------------------------------------
 
 FamiToneSfxPlay:
 
 	asl a					;get offset in the effects list
-	asl a
 	tay
 
 	jsr _FT2SfxClearChannel	;stops the effect if it plays
@@ -1089,7 +1097,7 @@ FamiToneSfxPlay:
 	sta FT_SFX_PTR_L,x		;store it
 	iny
 	lda (FT_TEMP_PTR),y
-	sta FT_SFX_PTR_H,x		;this enables the effect
+	sta FT_SFX_PTR_H,x		;this write enables the effect
 
 	rts
 

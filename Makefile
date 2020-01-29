@@ -15,7 +15,7 @@ all: $(EXECUTABLE) ${CRT_OBJ}
 crt0.o: *.s *.chr
 
 %.s: %.c *.h levels/*.h
-	$(CC) -Oi $< --add-source
+	CC65_HOME=$(CC65_HOME) $(CC) -Oi $< --add-source
 
 %.o: %.s
 	CC65_HOME=$(CC65_HOME) $(ASM) $<
