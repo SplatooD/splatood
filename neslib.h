@@ -108,7 +108,7 @@ void __fastcall__ oam_hide_rest(unsigned char sprid);
 
 
 
-//play a music in FamiTone format with dampening 0..15
+//play a music in FamiTone format with gating 0..15
 
 void __fastcall__ music_play_gated(unsigned char song, unsigned char dampening);
 
