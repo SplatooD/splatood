@@ -86,11 +86,8 @@ extern const unsigned char music_music_data[];
 /* Sound effects */
 #define SFX_START       0
 #define SFX_SPLAT       1
-#define SFX_SPLAT_VOL3  2
-#define SFX_SPLAT_VOL2  3
-#define SFX_SPLAT_VOL1  4
-#define SFX_RESPAWN1    5
-#define SFX_DEATH       6
+#define SFX_RESPAWN1    2
+#define SFX_DEATH       3
 
 /* Music */
 #define MUSIC_LEVEL         0
@@ -413,7 +410,7 @@ void show_title(void) {
     sfx_play(SFX_SPLAT,0);
     pal_col(6,0x29);
     WAIT_WITH_SKIP(20);
-    music_play(MUSIC_TITLE);
+    music_play(MUSIC_TITLE,0);
 
     pal_col(3,0x30);
     pal_col(15,0x30);
@@ -494,7 +491,7 @@ void show_select_map() {
     /* Use bank 1 to get full characterset tiles */
     bank_bg(1);
     bank_spr(1);
-    music_play(MUSIC_STAGE_SELECT);
+    music_play(MUSIC_STAGE_SELECT,0);
 
     ppu_off();
     pal_bg(palEndgame);
@@ -785,7 +782,7 @@ void show_endgame(void) {
     ppu_on_all();
 
     /* Play the post-game music. */
-    music_play(MUSIC_WELL_DONE);
+    music_play(MUSIC_WELL_DONE,0);
 
     /* Set the gauge palettes. */
     clear_update_list();
@@ -1001,7 +998,7 @@ void player_move(unsigned char id,unsigned char dir_index) {
     player_diag_flip[id]=1;
     //APU.pulse[0].control=0x12;
 
-    sfx_play(SFX_SPLAT+((player_dist(0,1)>>3)&0x3),0); //positional audio for maximum player distance of 31
+    sfx_play_damped(SFX_SPLAT,0,(player_dist(0,1)>>1)); //positional audio for maximum player distance of 31
 }
 
 /**
@@ -1273,13 +1270,13 @@ void game_loop(void) {
             --wait;
 
             if (!wait) {
-                music_play(MUSIC_GAME);
+                music_play(MUSIC_GAME,4);
             }
         }
 
         /* When the timer reaches 0, the game is over. */
         if (timer == 0) {
-            music_play(MUSIC_CLEAR);
+            music_play(MUSIC_CLEAR,0);
             game_done = TRUE;
         }
 

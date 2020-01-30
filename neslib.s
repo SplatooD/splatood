@@ -1,5 +1,5 @@
 ;NES hardware-dependent functions by Shiru (shiru@mail.ru)
-;with improvements by VEG
+;with improvements by VEG and Simon 'the Sorcerer' Richter
 ;Feel free to do anything you want with this code, consider it Public Domain
 
 
@@ -758,10 +758,12 @@ _vram_write:
 
 
 
-;void __fastcall__ music_play(unsigned char song);
+;void __fastcall__ music_play(unsigned char song, unsigned char dampening);
 
-_music_play=FamiToneMusicPlay
-
+_music_play:
+	sta FT_MUSIC_VOLUME
+	jsr popa
+	jmp FamiToneMusicPlay
 
 
 ;void __fastcall__ music_stop(void);
@@ -779,11 +781,16 @@ _music_pause=FamiToneMusicPause
 ;void __fastcall__ sfx_play(unsigned char sound,unsigned char channel);
 
 _sfx_play:
-
+	pha
 	and #$03
 	tax
 	lda @sfxPriority,x
 	tax
+	pla
+	lsr
+	lsr
+	sta FT_SFX_VOLUME,x
+
 	jsr popa
 	jmp FamiToneSfxPlay
 

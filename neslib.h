@@ -8,7 +8,7 @@
 //          unrle_vram renamed to vram_unrle, with adr argument removed
 // 060414 - many fixes and improvements, including sequental VRAM updates
 // previous versions were created since mid-2011, there were many updates
-
+// 30012020 - implemented dampening by Simon 'the Sorcerer' Richter.
 
 
 
@@ -108,9 +108,9 @@ void __fastcall__ oam_hide_rest(unsigned char sprid);
 
 
 
-//play a music in FamiTone format
+//play a music in FamiTone format with dampening 0..15
 
-void __fastcall__ music_play(unsigned char song);
+void __fastcall__ music_play(unsigned char song, unsigned char dampening);
 
 //stop music
 
@@ -123,6 +123,12 @@ void __fastcall__ music_pause(unsigned char pause);
 //play FamiTone sound effect on channel 0..3
 
 void __fastcall__ sfx_play(unsigned char sound,unsigned char channel);
+
+// same as above but with dampening 0..15
+
+void sfx_play_damped(unsigned char sound,unsigned char channel, unsigned char dampening){
+ sfx_play(sound,channel|(dampening<<2));
+};
 
 //play a DPCM sample, 1..63
 
