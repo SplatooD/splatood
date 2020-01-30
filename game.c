@@ -410,7 +410,7 @@ void show_title(void) {
     sfx_play(SFX_SPLAT,0);
     pal_col(6,0x29);
     WAIT_WITH_SKIP(20);
-    music_play(MUSIC_TITLE,0);
+    music_play(MUSIC_TITLE);
 
     pal_col(3,0x30);
     pal_col(15,0x30);
@@ -491,7 +491,7 @@ void show_select_map() {
     /* Use bank 1 to get full characterset tiles */
     bank_bg(1);
     bank_spr(1);
-    music_play(MUSIC_STAGE_SELECT,0);
+    music_play(MUSIC_STAGE_SELECT);
 
     ppu_off();
     pal_bg(palEndgame);
@@ -782,7 +782,7 @@ void show_endgame(void) {
     ppu_on_all();
 
     /* Play the post-game music. */
-    music_play(MUSIC_WELL_DONE,0);
+    music_play(MUSIC_WELL_DONE);
 
     /* Set the gauge palettes. */
     clear_update_list();
@@ -1270,13 +1270,13 @@ void game_loop(void) {
             --wait;
 
             if (!wait) {
-                music_play(MUSIC_GAME,4);
+                music_play_gated(MUSIC_GAME,8);
             }
         }
 
         /* When the timer reaches 0, the game is over. */
         if (timer == 0) {
-            music_play(MUSIC_CLEAR,0);
+            music_play(MUSIC_CLEAR);
             game_done = TRUE;
         }
 

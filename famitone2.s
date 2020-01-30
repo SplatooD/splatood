@@ -618,10 +618,9 @@ FamiToneUpdate:
 	sta <FT_TEMP_VAR1
 	pla
 	and #$0f
-	sec
-	sbc FT_MUSIC_VOLUME
-	bcs @ch1vol
-	lda #0
+	cmp FT_MUSIC_VOLUME
+	bcc @ch1vol
+	lda FT_MUSIC_VOLUME
 @ch1vol:
 	ora <FT_TEMP_VAR1
 @ch1cut:
@@ -662,10 +661,9 @@ FamiToneUpdate:
 	sta <FT_TEMP_VAR1
 	pla
 	and #$0f
-	sec
-	sbc FT_MUSIC_VOLUME
-	bcs @ch2vol
-	lda #0
+	cmp FT_MUSIC_VOLUME
+	bcc @ch2vol
+	lda FT_MUSIC_VOLUME
 @ch2vol:
 	ora <FT_TEMP_VAR1
 @ch2cut:
@@ -716,10 +714,9 @@ FamiToneUpdate:
 	sta <FT_TEMP_VAR1
 	pla
 	and #$0f
-	sec
-	sbc FT_MUSIC_VOLUME
-	bcs @ch4vol
-	lda #0
+	cmp FT_MUSIC_VOLUME
+	bcc @ch4vol
+	lda FT_MUSIC_VOLUME
 @ch4vol:
 	ora <FT_TEMP_VAR1
 @ch4cut:
