@@ -16,6 +16,7 @@
 - ~~Better weapon select~~
   - ~~Animated Sprites~~
   - ~~Palettes to indicate selection~~
+- ~~Squid mode (on B)~~
 - Weapon Balance
 
 ## 1.2
@@ -25,10 +26,10 @@
 - Shooters
   - Ammo
   - semicoloured tiles
+- Bubbler (Bubble enemies instead of killing them)
 - health
   - damage over time
 - Four Score 2v2 support
-- Squid mode (on B)
 - Bombs (secondary fire conflicting with squid mode)
 - Weapon Balance
 

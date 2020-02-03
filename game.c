@@ -61,9 +61,13 @@ extern const unsigned char music_music_data[];
 
 /* Weapons */
 #define NUM_WPNS        2
-#define WPN_ROLLER      0
-#define WPN_CHARGER     1
-//#define WPN_AI		2
+#define WPN_SQUID       0
+#define WPN_ROLLER      1
+#define WPN_CHARGER     2
+//#define WPN_AI2
+
+#define MODE_NORMAL	0
+#define MODE_SQUID	1
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
@@ -167,9 +171,9 @@ const unsigned char* const levelList[LEVELS_ALL*4]={
 
 /* Weapon Select */
 const unsigned char select_weapon[] =  "Select Weapon";
-const unsigned int projectile_speed[] = { PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
-const unsigned char weapon_ranges[] = { PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
-const unsigned char weapon_cooldown[] = { PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
+const unsigned int projectile_speed[] = { 0, PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
+const unsigned char weapon_ranges[] = { 0, PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
+const unsigned char weapon_cooldown[] = { 0, PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
 
 /* This is used to ensure the updatelist starts empty. */
 const unsigned char updateListData[]={
@@ -212,6 +216,8 @@ static unsigned char player_anim_cnt [PLAYER_MAX];
 static unsigned char player_diag_flip[PLAYER_MAX];
 static unsigned char player_wpn      [PLAYER_MAX];
 static unsigned char player_charge   [PLAYER_MAX];
+
+static unsigned char player_mode   [PLAYER_MAX];
 
 static unsigned char player_ai [PLAYER_MAX];
 static unsigned char ai_aggression[PLAYER_MAX];
@@ -585,6 +591,9 @@ void show_select_weapon(void) {
     player_ai[0]=0;
     player_ai[1]=1;
 
+    player_mode[0]=MODE_NORMAL;
+    player_mode[1]=MODE_NORMAL;
+
     while (1) {
 next:
 
@@ -621,8 +630,8 @@ next:
                 if (j & PAD_START) return;
                 /* Up - move cursor up */
                 if (j & PAD_UP) {
-                    if (player_wpn[player_id] == 0) {
-                        player_wpn[player_id] = NUM_WPNS-1;
+                    if (player_wpn[player_id] == 1) {
+                        player_wpn[player_id] = NUM_WPNS;
                     } else {
                         player_wpn[player_id] -= 1;
                     }
@@ -632,7 +641,7 @@ next:
                 /* Select or Down - move cursor down */
                 if (j & PAD_SELECT || j & PAD_LEFT || j & PAD_RIGHT) {
                     player_wpn[player_id] += 1;
-                    if (player_wpn[player_id] == NUM_WPNS) player_wpn[player_id] = 0;
+                    if (player_wpn[player_id] > NUM_WPNS) player_wpn[player_id] = 1;
                     goto next;
                 }
             }
@@ -986,7 +995,7 @@ void player_move(unsigned char id,unsigned char dir_index) {
      */
     map_type = map[MAP_ADR(px, py)];
 
-    if (player_wpn[id] == WPN_ROLLER && can_ink(map_type)) {
+    if (player_mode[id]==MODE_NORMAL && player_wpn[id] == WPN_ROLLER && can_ink(map_type)) {
         set_tile_palette(px, py, id+1);
     }
 
@@ -1219,9 +1228,8 @@ void game_loop(void) {
                 case DIR_RIGHT: spr_dir = SPR_RIGHT; break;
                 case DIR_UP: spr_dir = SPR_UP; break;
             }
-            oam_meta_spr(
-                px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame]
-            );
+	    if(player_mode[i]==MODE_SQUID) oam_meta_spr(px, py, spr, SprPlayers[i][0][spr_dir][anim_frame]);
+	    else oam_meta_spr(px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame]);
             spr-=16;
         }
 
@@ -1348,7 +1356,8 @@ void game_loop(void) {
                 if (j&PAD_RIGHT) player_move(i,2);
                 if (j&PAD_UP)    player_move(i,1);
                 if (j&PAD_DOWN)  player_move(i,3);
-                if (j&PAD_A)     player_make_projectile(i); else player_charge[i] = 0;
+                if (j&PAD_B)     player_mode[i]=MODE_SQUID; else player_mode[i]=MODE_NORMAL;
+                if (j&PAD_A)     {player_mode[i]=MODE_NORMAL; player_make_projectile(i);} else player_charge[i] = 0;
             }
 
             /* If this player has a projectile, move it as well. */
@@ -1385,7 +1394,7 @@ void game_loop(void) {
         /* Kill players that collide with eachother. */
         for (i = 0; i < player_all; ++i) {
             for (j = i + 1; j < player_all; ++j) {
-                if (player_x[i] == player_x[j] && player_y[i] == player_y[j]) {
+                if (player_x[i] == player_x[j] && player_y[i] == player_y[j] && player_mode[i]==MODE_NORMAL && player_mode[j]==MODE_NORMAL) {
                     // If you have a roller, kill the player you collide with
                     // If both players have rollers, both of them die
                     if (player_wpn[i] == WPN_ROLLER) player_die(j);
@@ -1395,13 +1404,13 @@ void game_loop(void) {
                         (player_x[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) &&
                         (player_y[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[j]  >> (TILE_SIZE_BIT+FP_BITS))) {
                     /* Player j kills player i using a projectile */
-                    player_die(i);
+                    if(player_mode[i]==MODE_NORMAL) player_die(i);
                 }
                 if (projectile_dir[i] != DIR_NONE &&
                         (player_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[i] >> (TILE_SIZE_BIT+FP_BITS)) &&
                         (player_y[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[i] >> (TILE_SIZE_BIT+FP_BITS))) {
                     /* Player i kills player j using a projectile */
-                    player_die(j);
+                    if(player_mode[j]==MODE_NORMAL) player_die(j);
                 }
             }
         }
