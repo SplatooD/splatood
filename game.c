@@ -999,7 +999,7 @@ void player_move(unsigned char id,unsigned char dir_index) {
         set_tile_palette(px, py, id+1);
     }
 
-    if ((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) {
+    if (((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) && (player_mode[id]!=MODE_SQUID || get_tile_palette(px,py)!=id+1)) {
             return;
     }
 
