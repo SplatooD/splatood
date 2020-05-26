@@ -5,8 +5,8 @@ RUNTIME_LIB = nes.lib
 CC65_HOME = /usr/share/cc65
 EXECUTABLE = splatood.nes
 
-ASM = ca65
-CC = cc65
+ASM = ca65 -t nes
+CC = cc65 -t nes -Oisr
 LD = ld65
 
 
@@ -15,7 +15,7 @@ all: $(EXECUTABLE) ${CRT_OBJ}
 crt0.o: *.s *.chr
 
 %.s: %.c *.h levels/*.h
-	CC65_HOME=$(CC65_HOME) $(CC) -Oi $< --add-source
+	CC65_HOME=$(CC65_HOME) $(CC) $< --add-source
 
 %.o: %.s
 	CC65_HOME=$(CC65_HOME) $(ASM) $<

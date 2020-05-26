@@ -6,5 +6,5 @@
 - Bubbler - paints own field and walls run against, **A** shoots bubble stunning (bubbling) enemy. (medium to slow rate of fire)
 - Shooter - **A** paints 4 fields in front (2 straight + 2 diagonal, high fire rate)
 - Bomb (main weapon) - **A** colors all fields <=2 distance radius (slow rate of fire)
-- Bomb (secondary weapon) - **A** shoots bomb, colors all fields <=2 distance radius when hiting or reaching max distance (slow rate of fire)
+- Bomb (secondary weapon) - **SELECT** shoots bomb, colors all fields <=2 distance radius when hiting or reaching max distance (slow rate of fire)
 

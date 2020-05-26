@@ -4,12 +4,12 @@
  *
  */
 
+#if !defined(__NES__)
+#  error This program can only be compiled for the NES at the moment!
+#endif
+
 /* NESlib */
 #include "neslib.h"
-
-/* Low Level NES Api */
-#define __NES__
-//#include "nes.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -72,13 +72,18 @@ extern const unsigned char music_music_data[];
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
-#define PROJECTILE_WAIT_TIME_ROLLER 16
-#define PROJECTILE_WAIT_TIME_CHARGER 64
+#define PROJECTILE_WAIT_TIME_ROLLER 32
+#define PROJECTILE_WAIT_TIME_CHARGER 8
 #define PROJECTILE_DISTANCE_ROLLER 4
 #define PROJECTILE_DISTANCE_CHARGER 16
 #define PROJECTILE_SPEED_ROLLER 8<<FP_BITS
 #define PROJECTILE_SPEED_CHARGER 16<<FP_BITS
-#define CHARGE_FRAMES   64
+
+#define ROLLER_MOVEMENT_SPEED 3<<3
+#define CHARGER_MOVEMENT_SPEED 3<<FP_BITS
+
+//#define CHARGE_FRAMES   64
+#define CHARGE_FRAMES   16
 #define TIMER_START     60
 #define TIMER_CYCLE     0x20
 
@@ -175,6 +180,7 @@ const unsigned char select_weapon[] =  "Select Weapon";
 const unsigned int projectile_speed[] = { 0, PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
 const unsigned char weapon_ranges[] = { 0, PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
 const unsigned char weapon_cooldown[] = { 0, PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
+const unsigned char weapon_movement_speed[] = { 0, ROLLER_MOVEMENT_SPEED, CHARGER_MOVEMENT_SPEED };
 
 /* This is used to ensure the updatelist starts empty. */
 const unsigned char updateListData[]={
@@ -1081,7 +1087,7 @@ unsigned char ai_move(unsigned char id){
 	    if(py-py2<=3){
 	     if(player_dir[id]==DIR_UP){ j=PAD_A; }
 	     else if(player_move_test(id,1)>0){ j=dirs[1]; }
-	   }}else if(py2-py<=3){
+	   }}else if((py2-py<=3)&&(py2-py>0)){
 	    if(player_dir[id]==DIR_DOWN){ j=PAD_A; }
 	    else if(player_move_test(id,3)>0){ j=dirs[3]; }
 	  }}else if(py==py2){
@@ -1089,7 +1095,7 @@ unsigned char ai_move(unsigned char id){
 	    if(px-px2<=3){
 	     if(player_dir[id]==DIR_LEFT){ j=PAD_A; }
 	     else if((player_move_test(id,0)>0)){ j=dirs[0]; }
-	   }}else if(px2-px<=3){
+	   }}else if((px2-px<=3)&&(px2-px>0)){
 	    if(player_dir[id]==DIR_RIGHT){ j=PAD_A; }
 	    else if(player_move_test(id,2)>0){ j=dirs[2]; }
 	  }}
@@ -1297,13 +1303,16 @@ void game_loop(void) {
                     sfx_play(SFX_RESPAWN1,0);
                 }
                 --player_wait[i];
-                continue;
-            }
+                //continue;
+            }else{
 
             if (wait) continue; /* Avoid processing input during initial spawn. */
 
             /* This player is moving, so animate their movement. */
             if (player_cnt[i])  {
+	        if(player_mode[i]==MODE_SQUID) player_speed[i]=3<<FP_BITS;
+		else player_speed[i]=weapon_movement_speed[player_wpn[i]];
+
                 switch (player_dir[i]) {
                     case DIR_RIGHT: player_x[i]+=player_speed[i]; break;
                     case DIR_LEFT:  player_x[i]-=player_speed[i]; break;
@@ -1363,7 +1372,7 @@ void game_loop(void) {
 
                 if ((j&PAD_A)&&(player_mode[i]==MODE_NORMAL)) player_make_projectile(i); else player_charge[i] = 0;
 
-            }
+            }}
 
             /* If this player has a projectile, move it as well. */
             if (projectile_cnt[i]) {
@@ -1399,21 +1408,21 @@ void game_loop(void) {
         /* Kill players that collide with eachother. */
         for (i = 0; i < player_all; ++i) {
             for (j = i + 1; j < player_all; ++j) {
-                if (player_x[i] == player_x[j] && player_y[i] == player_y[j] && player_mode[i]==MODE_NORMAL && player_mode[j]==MODE_NORMAL) {
+                if (((player_x[i]&0xff00) == (player_x[j]&0xff00)) && ((player_y[i]&0xff00) == (player_y[j]&0xff00)) && (player_mode[i]==MODE_NORMAL) && (player_mode[j]==MODE_NORMAL)) {
                     // If you have a roller, kill the player you collide with
                     // If both players have rollers, both of them die
                     if (player_wpn[i] == WPN_ROLLER) player_die(j);
                     if (player_wpn[j] == WPN_ROLLER) player_die(i);
                 }
                 if (projectile_dir[j] != DIR_NONE &&
-                        (player_x[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) &&
-                        (player_y[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[j]  >> (TILE_SIZE_BIT+FP_BITS))) {
+                        (player_x[i]&0xff00) == (projectile_x[j]&0xff00) &&
+                        (player_y[i]&0xff00) == (projectile_y[j]&0xff00)) {
                     /* Player j kills player i using a projectile */
                     if(player_mode[i]==MODE_NORMAL) player_die(i);
                 }
                 if (projectile_dir[i] != DIR_NONE &&
-                        (player_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[i] >> (TILE_SIZE_BIT+FP_BITS)) &&
-                        (player_y[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[i] >> (TILE_SIZE_BIT+FP_BITS))) {
+                        (player_x[j]&0xff00) == (projectile_x[i]&0xff00) &&
+                        (player_y[j]&0xff00) == (projectile_y[i]&0xff00)) {
                     /* Player i kills player j using a projectile */
                     if(player_mode[j]==MODE_NORMAL) player_die(j);
                 }
