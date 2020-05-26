@@ -2,7 +2,7 @@
 
 ## 1.1
 
-- Spawn invincibility (to prevent spawn camping)
+- ~~Spawn invincibility (to prevent spawn camping)~~
 - Woomy
 - ~~AI players~~
   - AI select

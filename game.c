@@ -117,8 +117,8 @@ const unsigned char palCharacters[8]={ 0x0f,0x04,0x30,0x0f,0x0f,0x19,0x30,0x0f }
 const unsigned char palCharPaused[8] = {0x0f,0x00,0x2d,0x0f,0x0f,0x00,0x2d,0x0f};
 const unsigned char palJudd[]={ 0x0f,0x26,0x27,0x30,0x0f,0x14,0x27,0x30,0x0f,0x2a,0x27,0x30,0x0f,0x26,0x27,0x30 };
 
-                                  /* v   1   .   0   .   5  */
-const unsigned char versionStr[] = {230,232,241,231,241,236};
+                                  /* v   1   .   0   .   6  */
+const unsigned char versionStr[] = {230,232,241,231,241,237};
 const unsigned char victoryMsg[] = "Victory!";
 const unsigned char fourSpaces[] = "    ";
 const unsigned char tieMsg[] = "It's a tie!";
@@ -592,8 +592,8 @@ void show_select_weapon(void) {
     player_ai[0]=0;
     player_ai[1]=1;
 
-    player_mode[0]=MODE_NORMAL;
-    player_mode[1]=MODE_NORMAL;
+    player_mode[0]=MODE_SQUID;
+    player_mode[1]=MODE_SQUID;
 
     while (1) {
 next:
@@ -1048,6 +1048,7 @@ void player_die(unsigned char id) {
     player_anim_cnt[id]=0;
     player_diag_flip[id]=0;
     player_dir[id] = DIR_NONE;
+    player_mode[id]=MODE_SQUID;
 
     player_wait[id] = RESPAWN_TIME;
     sfx_play(SFX_DEATH,0);
@@ -1070,14 +1071,11 @@ unsigned char ai_move(unsigned char id){
   if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
   else j=dirs[diri%4];
 
-  if((player_cooldown[id]==0)&&(ai_aggression[id]>=1)){
-   px=player_x_spawn[1-id]>>(TILE_SIZE_BIT+FP_BITS);
-   py=player_y_spawn[1-id]>>(TILE_SIZE_BIT+FP_BITS);
-   px2=player_x[1-id]>>(TILE_SIZE_BIT+FP_BITS);
-   py2=player_y[1-id]>>(TILE_SIZE_BIT+FP_BITS);
-   if((px!=px2)||(py!=py2)){ //dont try to kill enemy in spawn
+  if((player_cooldown[id]==0)&&(ai_aggression[id]>=1)&&(player_mode[1-id]!=MODE_SQUID)){
 	px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
 	py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+        px2=player_x[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+        py2=player_y[1-id]>>(TILE_SIZE_BIT+FP_BITS);
 	  if(px==px2){
 	   if(py>py2){
 	    if(py-py2<=3){
@@ -1095,7 +1093,7 @@ unsigned char ai_move(unsigned char id){
 	    if(player_dir[id]==DIR_RIGHT){ j=PAD_A; }
 	    else if(player_move_test(id,2)>0){ j=dirs[2]; }
 	  }}
-  }}
+  }
   
  return j;
 }
@@ -1224,10 +1222,10 @@ void game_loop(void) {
 
             switch (player_dir[i]) {
                 case DIR_NONE:
+                case DIR_UP: spr_dir = SPR_UP; break;
                 case DIR_DOWN: spr_dir = SPR_DOWN; break;
                 case DIR_LEFT: spr_dir = SPR_LEFT; break;
                 case DIR_RIGHT: spr_dir = SPR_RIGHT; break;
-                case DIR_UP: spr_dir = SPR_UP; break;
             }
 	    if(player_mode[i]==MODE_SQUID) oam_meta_spr(px, py, spr, SprPlayers[i][0][spr_dir][anim_frame]);
 	    else oam_meta_spr(px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame]);
@@ -1346,19 +1344,25 @@ void game_loop(void) {
                     player_cooldown[i] -= 1;
                 }
 
+
+                if (j&PAD_B) player_mode[i]=MODE_SQUID; else player_mode[i]=MODE_NORMAL;
+
                 if (j & player_dir[i] && player_diag_flip[i]) {
-                    /* Give priority new new direction (useful for cornering) */
+                    /* Give priority to new direction (useful for cornering) */
                     j &= ~player_dir[i];
                     player_diag_flip[i] = 0;
-                    player_move(i, player_dir_index[i]);
+                    //player_move(i, player_dir_index[i]);
                 }
 
                 if (j&PAD_LEFT)  player_move(i,0);
                 if (j&PAD_RIGHT) player_move(i,2);
                 if (j&PAD_UP)    player_move(i,1);
                 if (j&PAD_DOWN)  player_move(i,3);
-                if (j&PAD_B)     player_mode[i]=MODE_SQUID; else player_mode[i]=MODE_NORMAL;
-                if (j&PAD_A)     {player_mode[i]=MODE_NORMAL; player_make_projectile(i);} else player_charge[i] = 0;
+
+		if (player_dir[i]==DIR_NONE) player_mode[i]=MODE_SQUID;
+
+                if ((j&PAD_A)&&(player_mode[i]==MODE_NORMAL)) player_make_projectile(i); else player_charge[i] = 0;
+
             }
 
             /* If this player has a projectile, move it as well. */
