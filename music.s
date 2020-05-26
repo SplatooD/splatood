@@ -13,16 +13,16 @@ music_music_data:
 	.word @song6ch0,@song6ch1,@song6ch2,@song6ch3,@song6ch4,280,233
 
 @instruments:
-	.byte $30 ;instrument $00
+	.byte $f0 ;instrument $00
 	.word @env1,@env0,@env0
 	.byte $00
-	.byte $30 ;instrument $01
+	.byte $f0 ;instrument $01
 	.word @env2,@env13,@env0
 	.byte $00
-	.byte $30 ;instrument $02
+	.byte $f0 ;instrument $02
 	.word @env3,@env14,@env0
 	.byte $00
-	.byte $30 ;instrument $03
+	.byte $f0 ;instrument $03
 	.word @env4,@env15,@env0
 	.byte $00
 	.byte $30 ;instrument $04
@@ -31,10 +31,10 @@ music_music_data:
 	.byte $70 ;instrument $05
 	.word @env6,@env17,@env0
 	.byte $00
-	.byte $30 ;instrument $06
+	.byte $f0 ;instrument $06
 	.word @env7,@env18,@env24
 	.byte $00
-	.byte $30 ;instrument $07
+	.byte $f0 ;instrument $07
 	.word @env8,@env0,@env0
 	.byte $00
 	.byte $30 ;instrument $08
@@ -61,10 +61,10 @@ music_music_data:
 	.byte $70 ;instrument $0f
 	.word @env11,@env0,@env0
 	.byte $00
-	.byte $30 ;instrument $10
+	.byte $f0 ;instrument $10
 	.word @env1,@env19,@env25
 	.byte $00
-	.byte $30 ;instrument $11
+	.byte $f0 ;instrument $11
 	.word @env1,@env20,@env0
 	.byte $00
 	.byte $b0 ;instrument $12
@@ -328,35 +328,35 @@ music_music_data:
 	.byte $fb,$06
 @song3ch0loop:
 @ref40:
-	.byte $00,$f9,$83
+	.byte $f9,$85
 	.byte $fd
 	.word @song3ch0loop
 
 @song3ch1:
 @song3ch1loop:
 @ref41:
-	.byte $00,$f9,$83
+	.byte $f9,$85
 	.byte $fd
 	.word @song3ch1loop
 
 @song3ch2:
 @song3ch2loop:
 @ref42:
-	.byte $00,$f9,$83
+	.byte $f9,$85
 	.byte $fd
 	.word @song3ch2loop
 
 @song3ch3:
 @song3ch3loop:
 @ref43:
-	.byte $00,$f9,$83
+	.byte $f9,$85
 	.byte $fd
 	.word @song3ch3loop
 
 @song3ch4:
 @song3ch4loop:
 @ref44:
-	.byte $00,$f9,$83
+	.byte $f9,$85
 	.byte $fd
 	.word @song3ch4loop
 

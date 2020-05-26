@@ -1,5 +1,5 @@
 ;NES hardware-dependent functions by Shiru (shiru@mail.ru)
-;with improvements by VEG
+;with improvements by VEG and Simon 'the Sorcerer' Richter
 ;Feel free to do anything you want with this code, consider it Public Domain
 
 
@@ -11,13 +11,13 @@
 	.export _scroll,_split
 	.export _bank_spr,_bank_bg
 	.export _vram_read,_vram_write
-	.export _music_play,_music_stop,_music_pause
+	.export _music_play_gated,_music_stop,_music_pause
 	.export _sfx_play,_sample_play
 	.export _pad_poll,_pad_trigger,_pad_state
 	.export _rand8,_rand16,_set_rand
 	.export _vram_adr,_vram_put,_vram_fill,_vram_inc,_vram_unrle
 	.export _set_vram_update,_flush_vram_update
-	.export _memcpy,_memfill,_delay
+	.export _memfill,_delay
 
 
 
@@ -758,10 +758,12 @@ _vram_write:
 
 
 
-;void __fastcall__ music_play(unsigned char song);
+;void __fastcall__ music_play_gated(unsigned char song, unsigned char dampening);
 
-_music_play=FamiToneMusicPlay
-
+_music_play_gated:
+	sta FT_MUSIC_VOLUME
+	jsr popa
+	jmp FamiToneMusicPlay
 
 
 ;void __fastcall__ music_stop(void);
@@ -779,11 +781,16 @@ _music_pause=FamiToneMusicPause
 ;void __fastcall__ sfx_play(unsigned char sound,unsigned char channel);
 
 _sfx_play:
-
+	pha
 	and #$03
 	tax
 	lda @sfxPriority,x
 	tax
+	pla
+	lsr
+	lsr
+	sta FT_SFX_VOLUME,x
+
 	jsr popa
 	jmp FamiToneSfxPlay
 
@@ -1093,54 +1100,6 @@ _vram_inc:
 	ora <TEMP
 	sta <PPU_CTRL_VAR
 	sta PPU_CTRL
-
-	rts
-
-
-
-;void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
-
-_memcpy:
-
-	sta <LEN
-	stx <LEN+1
-	jsr popax
-	sta <SRC
-	stx <SRC+1
-	jsr popax
-	sta <DST
-	stx <DST+1
-
-	ldx #0
-
-@1:
-
-	lda <LEN+1
-	beq @2
-	jsr @3
-	dec <LEN+1
-	inc <SRC+1
-	inc <DST+1
-	jmp @1
-
-@2:
-
-	ldx <LEN
-	beq @5
-
-@3:
-
-	ldy #0
-
-@4:
-
-	lda (SRC),y
-	sta (DST),y
-	iny
-	dex
-	bne @4
-
-@5:
 
 	rts
 
