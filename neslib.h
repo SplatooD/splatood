@@ -9,7 +9,7 @@
 // 060414 - many fixes and improvements, including sequental VRAM updates
 // previous versions were created since mid-2011, there were many updates
 // 30012020 - implemented dampening by Simon 'the Sorcerer' Richter.
-
+// 26052020 - removed memcpy as it is available in string.h already.
 
 
 
