@@ -30,7 +30,7 @@
 - health
   - damage over time
 - Four Score 2v2 support
-- Bombs (secondary fire conflicting with squid mode)
+- Bombs (using select button)
 - Weapon Balance
 
 ## 1.3
