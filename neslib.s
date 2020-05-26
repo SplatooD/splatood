@@ -17,7 +17,7 @@
 	.export _rand8,_rand16,_set_rand
 	.export _vram_adr,_vram_put,_vram_fill,_vram_inc,_vram_unrle
 	.export _set_vram_update,_flush_vram_update
-	.export _memcpy,_memfill,_delay
+	.export _memfill,_delay
 
 
 
@@ -1100,54 +1100,6 @@ _vram_inc:
 	ora <TEMP
 	sta <PPU_CTRL_VAR
 	sta PPU_CTRL
-
-	rts
-
-
-
-;void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
-
-_memcpy:
-
-	sta <LEN
-	stx <LEN+1
-	jsr popax
-	sta <SRC
-	stx <SRC+1
-	jsr popax
-	sta <DST
-	stx <DST+1
-
-	ldx #0
-
-@1:
-
-	lda <LEN+1
-	beq @2
-	jsr @3
-	dec <LEN+1
-	inc <SRC+1
-	inc <DST+1
-	jmp @1
-
-@2:
-
-	ldx <LEN
-	beq @5
-
-@3:
-
-	ldy #0
-
-@4:
-
-	lda (SRC),y
-	sta (DST),y
-	iny
-	dex
-	bne @4
-
-@5:
 
 	rts
 

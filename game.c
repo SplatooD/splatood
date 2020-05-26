@@ -12,6 +12,7 @@
 //#include "nes.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 /* Name tables */
 #include "levels/splat_title.h"

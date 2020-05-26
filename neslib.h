@@ -30,7 +30,6 @@ void __fastcall__ pal_spr(const char *data);
 void __fastcall__ pal_col(unsigned char index,unsigned char color);
 
 //reset palette to $0f
-
 void __fastcall__ pal_clear(void);
 
 //set virtual bright both for sprites and background, 0 is black, 4 is normal, 8 is white
@@ -245,16 +244,11 @@ void __fastcall__ vram_unrle(const unsigned char *data);
 
 
 
-//like a normal memcpy, but does not return anything
-
-void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
 
 //like memset, but does not return anything
-
 void __fastcall__ memfill(void *dst,unsigned char value,unsigned int len);
 
 //delay for N frames
-
 void __fastcall__ delay(unsigned char frames);
 
 
@@ -277,8 +271,8 @@ void __fastcall__ delay(unsigned char frames);
 
 #define MASK_SPR		0x10
 #define MASK_BG			0x08
-#define MASK_EDGE_SPR	0x04
-#define MASK_EDGE_BG	0x02
+#define MASK_EDGE_SPR		0x04
+#define MASK_EDGE_BG		0x02
 
 #define NAMETABLE_A		0x2000
 #define NAMETABLE_B		0x2400
