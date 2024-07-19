@@ -72,7 +72,7 @@ PPU_CTRL_VAR: 		.res 1
 PPU_CTRL_VAR1: 		.res 1
 PPU_MASK_VAR: 		.res 1
 RAND_SEED: 			.res 2
-FT_TEMP: 			.res 3
+FT_TEMP: 			.res 4
 
 TEMP: 				.res 11
 

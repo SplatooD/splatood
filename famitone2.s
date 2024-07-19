@@ -1,11 +1,10 @@
-;FamiTone2 v1.11
-
+;FamiTone2 v1.12 SVAV = Simon's Volume Adjust Version.
 
 
 ;settings, uncomment or put them into your main program; the latter makes possible updates easier
 
 ; FT_BASE_ADR		= $0300	;page in the RAM used for FT2 variables, should be $xx00
-; FT_TEMP			= $00	;3 bytes in zeropage used by the library as a scratchpad
+; FT_TEMP			= $00	;4 bytes in zeropage used by the library as a scratchpad
 ; FT_DPCM_OFF		= $c000	;$c000..$ffc0, 64-byte steps
 ; FT_SFX_STREAMS	= 4		;number of sound effects played at once, 1..4
 
@@ -35,7 +34,8 @@ FT_TEMP_PTR			= FT_TEMP		;word
 FT_TEMP_PTR_L		= FT_TEMP_PTR+0
 FT_TEMP_PTR_H		= FT_TEMP_PTR+1
 FT_TEMP_VAR1		= FT_TEMP+2
-
+FT_TEMP_VAR2		= FT_TEMP+3
+FT_TEMP_SIZE        = 4
 
 ;envelope structure offsets, 5 bytes per envelope, grouped by variable type
 
@@ -67,7 +67,9 @@ FT_CHN_DUTY			= FT_BASE_ADR+8*FT_CHANNELS_ALL
 
 ;variables and aliases
 
-FT_ENVELOPES	= FT_BASE_ADR
+FT_MUSIC_VOLUME = FT_BASE_ADR
+
+FT_ENVELOPES	= FT_BASE_ADR+1
 FT_CH1_ENVS		= FT_ENVELOPES+0
 FT_CH2_ENVS		= FT_ENVELOPES+3
 FT_CH3_ENVS		= FT_ENVELOPES+6
@@ -134,20 +136,22 @@ FT_DPCM_EFFECT  = FT_VARS+11
 FT_OUT_BUF		= FT_VARS+12	;11 bytes
 
 
-;sound effect stream variables, 2 bytes and 15 bytes per stream
+;sound effect stream variables, 2 bytes and 16 bytes per stream
 ;when sound effects are disabled, this memory is not used
 
 FT_SFX_ADR_L		= FT_VARS+23
 FT_SFX_ADR_H		= FT_VARS+24
 FT_SFX_BASE_ADR		= FT_VARS+25
 
-FT_SFX_STRUCT_SIZE	= 15
-FT_SFX_REPEAT		= FT_SFX_BASE_ADR+0
-FT_SFX_PTR_L		= FT_SFX_BASE_ADR+1
-FT_SFX_PTR_H		= FT_SFX_BASE_ADR+2
-FT_SFX_OFF			= FT_SFX_BASE_ADR+3
-FT_SFX_BUF			= FT_SFX_BASE_ADR+4	;11 bytes
+FT_SFX_STRUCT_SIZE	= 16
+FT_SFX_VOLUME		= FT_SFX_BASE_ADR+0
+FT_SFX_REPEAT		= FT_SFX_BASE_ADR+1
+FT_SFX_PTR_L		= FT_SFX_BASE_ADR+2
+FT_SFX_PTR_H		= FT_SFX_BASE_ADR+3
+FT_SFX_OFF			= FT_SFX_BASE_ADR+4
+FT_SFX_BUF			= FT_SFX_BASE_ADR+5	;11 bytes
 
+FT_BASE_SIZE 		= FT_SFX_BUF+11-FT_BASE_ADR
 
 ;aliases for sound effect channels to use in user calls
 
@@ -318,7 +322,7 @@ FamiToneMusicStop:
 
 	bne @set_envelopes
 
-	rts
+	jmp FamiToneSampleStop
 
 
 ;------------------------------------------------------------------------------
@@ -409,7 +413,11 @@ FamiToneMusicPause:
 
 	tax					;set SZ flags for A
 	beq @unpause
+	
 @pause:
+
+	jsr FamiToneSampleStop
+	
 	lda #0				;mute sound
 	sta FT_CH1_VOLUME
 	sta FT_CH2_VOLUME
@@ -605,6 +613,16 @@ FamiToneUpdate:
 	sta FT_MR_PULSE1_H
 @ch1prev:
 	lda FT_CH1_VOLUME
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR1
+	pla
+	and #$0f
+	cmp FT_MUSIC_VOLUME
+	bcc @ch1vol
+	lda FT_MUSIC_VOLUME
+@ch1vol:
+	ora <FT_TEMP_VAR1
 @ch1cut:
 	ora FT_CH1_DUTY
 	sta FT_MR_PULSE1_V
@@ -638,6 +656,16 @@ FamiToneUpdate:
 	sta FT_MR_PULSE2_H
 @ch2prev:
 	lda FT_CH2_VOLUME
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR1
+	pla
+	and #$0f
+	cmp FT_MUSIC_VOLUME
+	bcc @ch2vol
+	lda FT_MUSIC_VOLUME
+@ch2vol:
+	ora <FT_TEMP_VAR1
 @ch2cut:
 	ora FT_CH2_DUTY
 	sta FT_MR_PULSE2_V
@@ -681,6 +709,16 @@ FamiToneUpdate:
 	ora <FT_TEMP_VAR1
 	sta FT_MR_NOISE_F
 	lda FT_CH4_VOLUME
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR1
+	pla
+	and #$0f
+	cmp FT_MUSIC_VOLUME
+	bcc @ch4vol
+	lda FT_MUSIC_VOLUME
+@ch4vol:
+	ora <FT_TEMP_VAR1
 @ch4cut:
 	ora #$f0
 	sta FT_MR_NOISE_V
@@ -926,8 +964,6 @@ _FT2ChannelUpdate:
 	rts
 
 
-	.if(FT_DPCM_ENABLE)
-
 
 ;------------------------------------------------------------------------------
 ; stop DPCM sample if it plays
@@ -940,6 +976,9 @@ FamiToneSampleStop:
 
 	rts
 
+
+	
+	.if(FT_DPCM_ENABLE)
 
 ;------------------------------------------------------------------------------
 ; play DPCM sample, used by music player, could be used externally
@@ -1015,23 +1054,26 @@ _FT2SamplePlay:
 
 FamiToneSfxInit:
 
+	stx <FT_TEMP_PTR_L
+	sty <FT_TEMP_PTR_H
+	
+	ldy #0
+	
 	.if(FT_PITCH_FIX)
 
 	lda FT_PAL_ADJUST		;add 2 to the sound list pointer for PAL
 	bne @ntsc
-	inx
-	bne @no_inc1
 	iny
-@no_inc1:
-	inx
-	bne @ntsc
 	iny
 @ntsc:
 
 	.endif
-
-	stx FT_SFX_ADR_L		;remember pointer to the data
-	sty FT_SFX_ADR_H
+	
+	lda (FT_TEMP_PTR),y		;read and store pointer to the effects list
+	sta FT_SFX_ADR_L
+	iny
+	lda (FT_TEMP_PTR),y
+	sta FT_SFX_ADR_H
 
 	ldx #FT_SFX_CH0			;init all the streams
 
@@ -1068,14 +1110,12 @@ _FT2SfxClearChannel:
 
 ;------------------------------------------------------------------------------
 ; play sound effect
-; in: A is a number of the sound effect
+; in: A is a number of the sound effect 0..127
 ;     X is offset of sound effect channel, should be FT_SFX_CH0..FT_SFX_CH3
 ;------------------------------------------------------------------------------
 
 FamiToneSfxPlay:
-
 	asl a					;get offset in the effects list
-	asl a
 	tay
 
 	jsr _FT2SfxClearChannel	;stops the effect if it plays
@@ -1089,7 +1129,7 @@ FamiToneSfxPlay:
 	sta FT_SFX_PTR_L,x		;store it
 	iny
 	lda (FT_TEMP_PTR),y
-	sta FT_SFX_PTR_H,x		;this enables the effect
+	sta FT_SFX_PTR_H,x		;this write enables the effect
 
 	rts
 
@@ -1146,10 +1186,17 @@ _FT2SfxUpdate:
 	and #$0f				;if volume of pulse 1 of effect is higher than that of the
 	sta <FT_TEMP_VAR1		;main buffer, overwrite the main buffer value with the new one
 	lda FT_SFX_BUF+0,x
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR2
+	pla
 	and #$0f
+	sec
+	sbc FT_SFX_VOLUME,x
+	bcc @no_pulse1
 	cmp <FT_TEMP_VAR1
 	bcc @no_pulse1
-	lda FT_SFX_BUF+0,x
+	ora <FT_TEMP_VAR2
 	sta FT_OUT_BUF+0
 	lda FT_SFX_BUF+1,x
 	sta FT_OUT_BUF+1
@@ -1161,10 +1208,17 @@ _FT2SfxUpdate:
 	and #$0f
 	sta <FT_TEMP_VAR1
 	lda FT_SFX_BUF+3,x
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR2
+	pla
 	and #$0f
+	sec
+	sbc FT_SFX_VOLUME,x
+	bcc @no_pulse2
 	cmp <FT_TEMP_VAR1
 	bcc @no_pulse2
-	lda FT_SFX_BUF+3,x
+	ora <FT_TEMP_VAR2
 	sta FT_OUT_BUF+3
 	lda FT_SFX_BUF+4,x
 	sta FT_OUT_BUF+4
@@ -1185,10 +1239,17 @@ _FT2SfxUpdate:
 	and #$0f
 	sta <FT_TEMP_VAR1
 	lda FT_SFX_BUF+9,x
+	pha
+	and #$f0
+	sta <FT_TEMP_VAR2
+	pla
 	and #$0f
+	sec
+	sbc FT_SFX_VOLUME,x
+	bcc @no_noise
 	cmp <FT_TEMP_VAR1
 	bcc @no_noise
-	lda FT_SFX_BUF+9,x
+	ora <FT_TEMP_VAR2
 	sta FT_OUT_BUF+9
 	lda FT_SFX_BUF+10,x
 	sta FT_OUT_BUF+10

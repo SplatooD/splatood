@@ -1,5 +1,7 @@
 # SplatooD: A Splatoon demake for NES
 
+This is a modified version of splatood. I am not the original creator, I simply changed some things I didn't like about the original to learn some cc65 NES c programming.
+
 ![s](https://i.imgur.com/E1oPhVa.png) ![screenshot](http://i.imgur.com/jGOvsaF.png) ![s](https://i.imgur.com/y7Z1OsG.png)
 
 ## Game Manual

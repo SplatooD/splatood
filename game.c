@@ -4,8 +4,15 @@
  *
  */
 
+#if !defined(__NES__)
+#  error This program can only be compiled for the NES at the moment!
+#endif
+
 /* NESlib */
 #include "neslib.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 /* Name tables */
 #include "levels/splat_title.h"
@@ -55,18 +62,28 @@ extern const unsigned char music_music_data[];
 
 /* Weapons */
 #define NUM_WPNS        2
-#define WPN_ROLLER      0
-#define WPN_CHARGER     1
+#define WPN_SQUID       0
+#define WPN_ROLLER      1
+#define WPN_CHARGER     2
+//#define WPN_AI2
+
+#define MODE_NORMAL	0
+#define MODE_SQUID	1
 
 /* Tuneable gameplay parameters */
 #define RESPAWN_TIME    64
-#define PROJECTILE_WAIT_TIME_ROLLER 16
-#define PROJECTILE_WAIT_TIME_CHARGER 64
+#define PROJECTILE_WAIT_TIME_ROLLER 32
+#define PROJECTILE_WAIT_TIME_CHARGER 8
 #define PROJECTILE_DISTANCE_ROLLER 4
 #define PROJECTILE_DISTANCE_CHARGER 16
 #define PROJECTILE_SPEED_ROLLER 8<<FP_BITS
 #define PROJECTILE_SPEED_CHARGER 16<<FP_BITS
-#define CHARGE_FRAMES   64
+
+#define ROLLER_MOVEMENT_SPEED 3<<3
+#define CHARGER_MOVEMENT_SPEED 3<<FP_BITS
+
+//#define CHARGE_FRAMES   64
+#define CHARGE_FRAMES   16
 #define TIMER_START     60
 #define TIMER_CYCLE     0x20
 
@@ -105,8 +122,8 @@ const unsigned char palCharacters[8]={ 0x0f,0x04,0x30,0x0f,0x0f,0x19,0x30,0x0f }
 const unsigned char palCharPaused[8] = {0x0f,0x00,0x2d,0x0f,0x0f,0x00,0x2d,0x0f};
 const unsigned char palJudd[]={ 0x0f,0x26,0x27,0x30,0x0f,0x14,0x27,0x30,0x0f,0x2a,0x27,0x30,0x0f,0x26,0x27,0x30 };
 
-                                  /* v   1   .   0   .   5  */
-const unsigned char versionStr[] = {230,232,241,231,241,236};
+                                  /* v   1   .   0   .   6  */
+const unsigned char versionStr[] = {230,232,241,231,241,237};
 const unsigned char victoryMsg[] = "Victory!";
 const unsigned char fourSpaces[] = "    ";
 const unsigned char tieMsg[] = "It's a tie!";
@@ -126,11 +143,13 @@ const unsigned char credits_10[] = "      Graphics";
 const unsigned char credits_11[] = "    Squid Meier";
 const unsigned char credits_12[] = "   Game Mechanics";
 const unsigned char credits_13[] = "  American McGill";
-const unsigned char credits_14[] = " Splatoon (C) 2015";
-const unsigned char credits_15[] = "      Nintendo";
-const unsigned char credits_16[] = "Thanks for playing!";
+const unsigned char credits_14[] = "   AI Programming";
+const unsigned char credits_15[] = "  Simon U. Richter";
+const unsigned char credits_16[] = " Splatoon (C) 2015";
+const unsigned char credits_17[] = "      Nintendo";
+const unsigned char credits_18[] = "Thanks for playing!";
 
-const unsigned char * credits[] = { credits_0, credits_1, credits_2, credits_3, credits_4, credits_5, credits_6, credits_7, credits_8, credits_9, credits_10, credits_11, credits_12, credits_13, credits_14, credits_15, credits_16, zero, zero, zero };
+const unsigned char * credits[] = { credits_0, credits_1, credits_2, credits_3, credits_4, credits_5, credits_6, credits_7, credits_8, credits_9, credits_10, credits_11, credits_12, credits_13, credits_14, credits_15, credits_16, credits_17, credits_18, zero, zero, zero};
 
 const unsigned char select_map[] = "Select Map";
 const unsigned char level_kelpdome[] = "Kelp Dome";
@@ -158,9 +177,10 @@ const unsigned char* const levelList[LEVELS_ALL*4]={
 
 /* Weapon Select */
 const unsigned char select_weapon[] =  "Select Weapon";
-const unsigned int projectile_speed[] = { PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
-const unsigned char weapon_ranges[] = { PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
-const unsigned char weapon_cooldown[] = { PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
+const unsigned int projectile_speed[] = { 0, PROJECTILE_SPEED_ROLLER, PROJECTILE_SPEED_CHARGER };
+const unsigned char weapon_ranges[] = { 0, PROJECTILE_DISTANCE_ROLLER, PROJECTILE_DISTANCE_CHARGER };
+const unsigned char weapon_cooldown[] = { 0, PROJECTILE_WAIT_TIME_ROLLER, PROJECTILE_WAIT_TIME_CHARGER };
+const unsigned char weapon_movement_speed[] = { 0, ROLLER_MOVEMENT_SPEED, CHARGER_MOVEMENT_SPEED };
 
 /* This is used to ensure the updatelist starts empty. */
 const unsigned char updateListData[]={
@@ -174,15 +194,15 @@ static unsigned char palette_state[64];
 
 /* All the globals after this end up in the zeropage. */
 
-#pragma bssseg (push,"ZEROPAGE")
-#pragma dataseg(push,"ZEROPAGE")
+#pragma bss-name (push,"ZEROPAGE")
+#pragma data-name (push,"ZEROPAGE")
 
-static unsigned char i,j;
+static unsigned char i,j,k;
 static unsigned char ptr,spr;
 static unsigned char px,py;
 static unsigned char wait;
 static unsigned int i16;
-static unsigned int  sum,div;
+static unsigned int sum,divvar;
 
 static unsigned char nameRow[32];
 
@@ -193,6 +213,7 @@ static unsigned int  player_y_spawn [PLAYER_MAX];
 
 static unsigned int  player_x        [PLAYER_MAX];
 static unsigned int  player_y        [PLAYER_MAX];
+static unsigned char player_dir_index [PLAYER_MAX];
 static unsigned char player_dir      [PLAYER_MAX];
 static int           player_cnt      [PLAYER_MAX];
 static unsigned int  player_speed    [PLAYER_MAX];
@@ -202,6 +223,12 @@ static unsigned char player_anim_cnt [PLAYER_MAX];
 static unsigned char player_diag_flip[PLAYER_MAX];
 static unsigned char player_wpn      [PLAYER_MAX];
 static unsigned char player_charge   [PLAYER_MAX];
+
+static unsigned char player_mode   [PLAYER_MAX];
+
+static unsigned char player_ai [PLAYER_MAX];
+static unsigned char ai_aggression[PLAYER_MAX];
+const unsigned char dirs[4]={ DIR_LEFT,DIR_UP,DIR_RIGHT,DIR_DOWN }; //basic maze strategy: always turn right
 
 static unsigned int  projectile_x        [PLAYER_MAX];
 static unsigned int  projectile_y        [PLAYER_MAX];
@@ -248,7 +275,20 @@ void clear_update_list() {
 
 
 /**
- * Set the pallete for a tile in the attribute table.
+ * Get the palette value for a tile in the attribute table.
+ */
+unsigned char get_tile_palette(unsigned char x_idx, unsigned char y_idx) {
+    unsigned char palette_mask;
+    unsigned char palette_address;
+    unsigned char palette_shift_val;
+    palette_address =  (y_idx / 2) * 8 + x_idx / 2;
+    palette_shift_val = (y_idx % 2)*4 + (x_idx % 2)*2;
+    palette_mask = (0x03 << palette_shift_val);
+    return (palette_state[palette_address]&palette_mask)>>palette_shift_val;
+}
+
+/**
+ * Set the palette value for a tile in the attribute table.
  */
 void set_tile_palette(unsigned char x_idx, unsigned char y_idx, unsigned char value) {
     unsigned char palette_mask;
@@ -552,6 +592,15 @@ void show_select_weapon(void) {
 
     anim_frame = 0;
 
+    //default aggressive ai for player 2
+    ai_aggression[0]=1;
+    ai_aggression[1]=1;
+    player_ai[0]=0;
+    player_ai[1]=1;
+
+    player_mode[0]=MODE_SQUID;
+    player_mode[1]=MODE_SQUID;
+
     while (1) {
 next:
 
@@ -583,12 +632,13 @@ next:
             i++;
             for (player_id = 0; player_id < 2; player_id++) {
                 j = pad_trigger(player_id);
+		if((j!=0)&&(player_id==1)) player_ai[player_id]=0; //disable ai if player 2 presses any key at weapon select screen
                 /* Start - Select weapon */
                 if (j & PAD_START) return;
                 /* Up - move cursor up */
                 if (j & PAD_UP) {
-                    if (player_wpn[player_id] == 0) {
-                        player_wpn[player_id] = NUM_WPNS-1;
+                    if (player_wpn[player_id] == 1) {
+                        player_wpn[player_id] = NUM_WPNS;
                     } else {
                         player_wpn[player_id] -= 1;
                     }
@@ -598,7 +648,7 @@ next:
                 /* Select or Down - move cursor down */
                 if (j & PAD_SELECT || j & PAD_LEFT || j & PAD_RIGHT) {
                     player_wpn[player_id] += 1;
-                    if (player_wpn[player_id] == NUM_WPNS) player_wpn[player_id] = 0;
+                    if (player_wpn[player_id] > NUM_WPNS) player_wpn[player_id] = 1;
                     goto next;
                 }
             }
@@ -620,7 +670,7 @@ void show_credits() {
     /* Write credits. */
     i = 0;
     j = 0;
-    div = 0;
+    divvar = 0;
 
     /* Clear the scrolling nametables, A and C */
     vram_adr(NAMETABLE_C);
@@ -629,7 +679,7 @@ void show_credits() {
 
     sum = NAMETABLE_C;
 
-    while (i < 17) { /* 4 6 A C */
+    while (i < 19) { /* 4 6 A C */
         ppu_wait_nmi();
         ppu_off();
         vram_adr(sum);
@@ -642,17 +692,17 @@ void show_credits() {
         ppu_on_all();
 
         do {
-            scroll(0,div);
+            scroll(0,divvar);
 
             /* Judd as a sprite. */
-            if (i == 0 && div < 0x62) {
-                oam_meta_spr(0x70,0x48-div,0,(char*)i16);
+            if (i == 0 && divvar < 0x62) {
+                oam_meta_spr(0x70,0x48-divvar,0,(char*)i16);
             }
 
-            div++;
+            divvar++;
             WAIT_WITH_SKIP(1);
-        } while (div % 240);
-        if (div == 480) div = 0;
+        } while (divvar % 240);
+        if (divvar == 480) divvar = 0;
 
         if (sum == NAMETABLE_A) sum = NAMETABLE_C;
         else sum = NAMETABLE_A;
@@ -667,10 +717,10 @@ void show_credits() {
     vram_fill(0xa0,1024-64);
     ppu_on_all();
 
-    while (div % 240 < 100) {
+    while (divvar % 240 < 100) {
         WAIT_WITH_SKIP(1);
-        scroll(0,div);
-        div++;
+        scroll(0,divvar);
+        divvar++;
     }
 
 _skip_title:
@@ -711,19 +761,19 @@ void show_endgame(void) {
     sum = (player_score[0] + player_score[1]);
 
     /* Calculate percentage for player 1 */
-    div = player_score[0] * 100;
-    div /= sum;
-    if (div == 100) div = 99;
-    if (div == 0) div = 1;
-    put_num(NAMETABLE_A+0x1EA,div,2);
+    divvar = player_score[0] * 100;
+    divvar /= sum;
+    if (divvar == 100) divvar = 99;
+    if (divvar == 0) divvar = 1;
+    put_num(NAMETABLE_A+0x1EA,divvar,2);
 
     /* Player 2 must be 100% - (player 1) */
-    div = 100 - div;
-    put_num(NAMETABLE_A+0x1F4,div,2);
+    divvar = 100 - divvar;
+    put_num(NAMETABLE_A+0x1F4,divvar,2);
 
     /* Convert Player 2's percentage to a gauge width */
-    div *= 9;
-    div /= 100;
+    divvar *= 9;
+    divvar /= 100;
 
     /* Print the victory message. */
     if (player_score[0] > player_score[1]) {
@@ -752,11 +802,11 @@ void show_endgame(void) {
 
     /* Set the gauge palettes. */
     clear_update_list();
-    for (i = 4; i < 12 - div; ++i) {
+    for (i = 4; i < 12 - divvar; ++i) {
         /* Player 1 on the left. */
         set_tile_palette(i,8,1);
     }
-    for (i = 12 - div; i <= 11; ++i) {
+    for (i = 12 - divvar; i <= 11; ++i) {
         /* Player 2 on the right. */
         set_tile_palette(i,8,2);
 
@@ -773,7 +823,7 @@ void show_endgame(void) {
 }
 
 /* 
- * Move a projectile if the is no wall
+ * Move a projectile if there is no wall
  */
 void projectile_move(unsigned char id) {
     unsigned char map_type = 0;
@@ -830,19 +880,93 @@ void projectile_move(unsigned char id) {
 
 
 /**
+ * Calculate player distance
+ *
+ * Uses Manhattan metric
+ */
+unsigned int player_dist(unsigned char id1, unsigned char id2){
+   int px2=player_x[id1]>>(TILE_SIZE_BIT+FP_BITS);
+   int py2=player_y[id1]>>(TILE_SIZE_BIT+FP_BITS);
+   int px=player_x[id2]>>(TILE_SIZE_BIT+FP_BITS);
+   int py=player_y[id2]>>(TILE_SIZE_BIT+FP_BITS);
+   return abs(px2-px)+abs(py2-py);
+}
+
+/**
+ * Player movement test.
+ *
+ * Allows AI to test movement directions without actual movement.
+ */
+unsigned char player_move_test(unsigned char id,unsigned char dir_index) {
+    unsigned char map_type = 0;
+    unsigned char tile_palette;
+    unsigned char is_wall=0;
+    /*if (player_cooldown[id]) {
+        return 0;
+    }*/
+
+    px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
+    py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+
+    switch (dir_index%4) {
+        case 0:  --px; break;
+        case 2: ++px; break;
+        case 1:    --py; break;
+        case 3:  ++py; break;
+    }
+
+
+    if (px > MAP_WDT-1) {
+            return 0;
+    }
+
+    if (py > MAP_HGT-1) {
+            return 0;
+    }
+
+    /*
+     * Wall tiles:
+     * 0x22~0x29
+     * 0x32~0x39
+     */
+    map_type = map[MAP_ADR(px, py)];
+
+	//water
+//    if(map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) return 0;
+    if((map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) && player_mode[id] != MODE_SQUID) return 0;
+
+ 
+    if((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) is_wall=1;
+
+	//inkable
+    if(can_ink(map_type)){
+
+     tile_palette=get_tile_palette(px,py);
+
+     if(tile_palette==id+1) return 1-is_wall; //already inked
+     if(tile_palette==2-id) return 4; //enemy ink
+     else return 3-is_wall; //uninked
+    }
+
+    return 0;
+}
+
+
+/**
  * Player movement.
  *
  * Player movement is tile-by-tile with an animation between
  * tiles that we need to initialize.
  */
-void player_move(unsigned char id,unsigned char dir) {
+void player_move(unsigned char id,unsigned char dir_index) {
     unsigned char map_type = 0;
     if (player_cooldown[id]) {
         return;
     }
 
     /* We always set direction so sprites update facing */
-    player_dir[id]=dir;
+    player_dir_index[id]=dir_index;
+    player_dir[id]=dirs[dir_index];
 
     /* A pad direction is being held, so animate */
     player_anim_cnt[id] += 1;
@@ -857,11 +981,11 @@ void player_move(unsigned char id,unsigned char dir) {
     px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
     py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
 
-    switch (dir) {
-        case DIR_LEFT:  --px; break;
-        case DIR_RIGHT: ++px; break;
-        case DIR_UP:    --py; break;
-        case DIR_DOWN:  ++py; break;
+    switch (dir_index) {
+        case 0:  --px; break;
+        case 2: ++px; break;
+        case 1:    --py; break;
+        case 3:  ++py; break;
     }
 
 
@@ -880,17 +1004,19 @@ void player_move(unsigned char id,unsigned char dir) {
      */
     map_type = map[MAP_ADR(px, py)];
 
-    if (player_wpn[id] == WPN_ROLLER && can_ink(map_type)) {
+    if (player_mode[id]==MODE_NORMAL && player_wpn[id] == WPN_ROLLER && can_ink(map_type)) {
         set_tile_palette(px, py, id+1);
     }
 
-    if ((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) {
+    if (((map_type >= 0x22 && map_type <= 0x29) || (map_type >= 0x32 && map_type <= 0x39)) && (player_mode[id]!=MODE_SQUID || get_tile_palette(px,py)!=id+1)) {
             return;
     }
 
     player_cnt[id]=TILE_SIZE<<FP_BITS;
     player_diag_flip[id]=1;
-    sfx_play(SFX_SPLAT,0);
+    //APU.pulse[0].control=0x12;
+
+    sfx_play_damped(SFX_SPLAT,0,(player_dist(0,1)>>1)); //positional audio for maximum player distance of 31
 }
 
 /**
@@ -930,9 +1056,54 @@ void player_die(unsigned char id) {
     player_anim_cnt[id]=0;
     player_diag_flip[id]=0;
     player_dir[id] = DIR_NONE;
+    player_mode[id]=MODE_SQUID;
 
     player_wait[id] = RESPAWN_TIME;
     sfx_play(SFX_DEATH,0);
+}
+
+/**
+ * AI movement with aggressive weapon mode.
+ */
+unsigned char ai_move(unsigned char id){
+  unsigned char diri,dirv,dirtest;
+  unsigned char px2,py2;
+  if(player_dir[id]==DIR_NONE) j=rand8()%4; //random start direction
+  else j=player_dir_index[id]; //prefer movements in the same direction
+  diri=255; dirv=0;
+  for(k=0;k<4;k++){
+   dirtest=player_move_test(id,j+k);
+   if(dirtest>dirv){dirv=dirtest; diri=j+k; if(dirtest==4) break;}
+   else if((dirtest==dirv)&&(dirv==1)&&(rand8()<8)){dirv=dirtest; diri=j+k;}
+  }
+  if(dirv==0) j=PAD_A; //if no movement is possible just fire weapon
+  else j=dirs[diri%4];
+
+  if((player_cooldown[id]==0)&&(ai_aggression[id]>=1)&&(player_mode[1-id]!=MODE_SQUID)){
+	px=player_x[id]>>(TILE_SIZE_BIT+FP_BITS);
+	py=player_y[id]>>(TILE_SIZE_BIT+FP_BITS);
+        px2=player_x[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+        py2=player_y[1-id]>>(TILE_SIZE_BIT+FP_BITS);
+	  if(px==px2){
+	   if(py>py2){
+	    if(py-py2<=3){
+	     if(player_dir[id]==DIR_UP){ j=PAD_A; }
+	     else if(player_move_test(id,1)>0){ j=dirs[1]; }
+	   }}else if((py2-py<=3)&&(py2-py>0)){
+	    if(player_dir[id]==DIR_DOWN){ j=PAD_A; }
+	    else if(player_move_test(id,3)>0){ j=dirs[3]; }
+	  }}else if(py==py2){
+	   if(px>px2){
+	    if(px-px2<=3){
+	     if(player_dir[id]==DIR_LEFT){ j=PAD_A; }
+	     else if((player_move_test(id,0)>0)){ j=dirs[0]; }
+	   }}else if((px2-px<=3)&&(px2-px>0)){
+	    if(player_dir[id]==DIR_RIGHT){ j=PAD_A; }
+	    else if(player_move_test(id,2)>0){ j=dirs[2]; }
+	  }}
+  }
+  
+ return j;
 }
 
 
@@ -1059,14 +1230,13 @@ void game_loop(void) {
 
             switch (player_dir[i]) {
                 case DIR_NONE:
+                case DIR_UP: spr_dir = SPR_UP; break;
                 case DIR_DOWN: spr_dir = SPR_DOWN; break;
                 case DIR_LEFT: spr_dir = SPR_LEFT; break;
                 case DIR_RIGHT: spr_dir = SPR_RIGHT; break;
-                case DIR_UP: spr_dir = SPR_UP; break;
             }
-            oam_meta_spr(
-                px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame],
-            );
+	    if(player_mode[i]==MODE_SQUID) oam_meta_spr(px, py, spr, SprPlayers[i][0][spr_dir][anim_frame]);
+	    else oam_meta_spr(px, py, spr, SprPlayers[i][player_wpn[i]][spr_dir][anim_frame]);
             spr-=16;
         }
 
@@ -1115,7 +1285,7 @@ void game_loop(void) {
             --wait;
 
             if (!wait) {
-                music_play(MUSIC_GAME);
+                music_play_gated(MUSIC_GAME,8);
             }
         }
 
@@ -1135,13 +1305,20 @@ void game_loop(void) {
                     sfx_play(SFX_RESPAWN1,0);
                 }
                 --player_wait[i];
-                continue;
-            }
+                //continue;
+            }else{
 
             if (wait) continue; /* Avoid processing input during initial spawn. */
 
             /* This player is moving, so animate their movement. */
             if (player_cnt[i])  {
+            	px = player_x[i] >> (TILE_SIZE_BIT + FP_BITS);
+            	py = player_y[i] >> (TILE_SIZE_BIT + FP_BITS);
+		map_type = map[MAP_ADR(px, py)];
+                //if((tile_pal==2-i) && (player_mode[i]==MODE_SQUID)) player_speed[i]=1<<FP_BITS; //enemy ink is slow for squid
+		if((map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) && (player_mode[i]==MODE_SQUID)) player_speed[i]=1<<FP_BITS; //water is slow for squid!
+		else player_speed[i]=weapon_movement_speed[player_wpn[i]];                                                                                     //otherwise have normal speed, squid or kid.
+
                 switch (player_dir[i]) {
                     case DIR_RIGHT: player_x[i]+=player_speed[i]; break;
                     case DIR_LEFT:  player_x[i]-=player_speed[i]; break;
@@ -1170,26 +1347,38 @@ void game_loop(void) {
             /* No current movement, accept input. */
             if (!player_cnt[i]) {
 
-                /* Read pad state. */
-                j = pad_state(i);
+		if(player_ai[i]!=0){
+		 // AI
+		 j=ai_move(i);
+		}else{
+                 /* Read pad state if ai is disabled. */
+                 j = pad_state(i);
+		}
 
                 if (player_cooldown[i]) {
                     player_cooldown[i] -= 1;
                 }
 
+
+                if (j&PAD_B) player_mode[i]=MODE_SQUID; else player_mode[i]=MODE_NORMAL;
+
                 if (j & player_dir[i] && player_diag_flip[i]) {
-                    /* Give priority new new direction (useful for cornering) */
+                    /* Give priority to new direction (useful for cornering) */
                     j &= ~player_dir[i];
                     player_diag_flip[i] = 0;
-                    player_move(i, player_dir[i]);
+                    //player_move(i, player_dir_index[i]);
                 }
 
-                if (j&PAD_LEFT)  player_move(i,DIR_LEFT);
-                if (j&PAD_RIGHT) player_move(i,DIR_RIGHT);
-                if (j&PAD_UP)    player_move(i,DIR_UP);
-                if (j&PAD_DOWN)  player_move(i,DIR_DOWN);
-                if (j&PAD_A)     player_make_projectile(i); else player_charge[i] = 0;
-            }
+                if (j&PAD_LEFT)  player_move(i,0);
+                if (j&PAD_RIGHT) player_move(i,2);
+                if (j&PAD_UP)    player_move(i,1);
+                if (j&PAD_DOWN)  player_move(i,3);
+
+		if (player_dir[i]==DIR_NONE) player_mode[i]=MODE_SQUID;
+
+                if ((j&PAD_A)&&(player_mode[i]==MODE_NORMAL)) player_make_projectile(i); else player_charge[i] = 0;
+
+            }}
 
             /* If this player has a projectile, move it as well. */
             if (projectile_cnt[i]) {
@@ -1225,23 +1414,33 @@ void game_loop(void) {
         /* Kill players that collide with eachother. */
         for (i = 0; i < player_all; ++i) {
             for (j = i + 1; j < player_all; ++j) {
-                if (player_x[i] == player_x[j] && player_y[i] == player_y[j]) {
+                if (((player_x[i]&0xff00) == (player_x[j]&0xff00)) && ((player_y[i]&0xff00) == (player_y[j]&0xff00))) {
                     // If you have a roller, kill the player you collide with
                     // If both players have rollers, both of them die
-                    if (player_wpn[i] == WPN_ROLLER) player_die(j);
-                    if (player_wpn[j] == WPN_ROLLER) player_die(i);
+                    // If one of the players is a squid, only squid dies
+                    if ((player_wpn[i] == WPN_ROLLER)&&(player_mode[i]!=MODE_SQUID)&&(player_mode[j]!=MODE_SQUID)){
+			 player_die(j);
+			 player_die(i);
+		    }
+                    if ((player_wpn[j] == WPN_ROLLER)&&(player_mode[j]!=MODE_SQUID)&&(player_mode[i]!=MODE_SQUID)){
+			 player_die(i);
+                         player_die(j);
+                    }
+		    if ((player_wpn[i] == WPN_ROLLER)&&(player_mode[i]!=MODE_SQUID)&&(player_mode[j]==MODE_SQUID)) player_die(j);
+                    if ((player_wpn[j] == WPN_ROLLER)&&(player_mode[j]!=MODE_SQUID)&&(player_mode[i]==MODE_SQUID)) player_die(i);
+
                 }
                 if (projectile_dir[j] != DIR_NONE &&
-                        (player_x[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) &&
-                        (player_y[i] >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[j]  >> (TILE_SIZE_BIT+FP_BITS))) {
+                        (player_x[i]&0xff00) == (projectile_x[j]&0xff00) &&
+                        (player_y[i]&0xff00) == (projectile_y[j]&0xff00)) {
                     /* Player j kills player i using a projectile */
-                    player_die(i);
+                    if((player_mode[i]==MODE_NORMAL) || (player_mode[i]==MODE_SQUID)) player_die(i);
                 }
                 if (projectile_dir[i] != DIR_NONE &&
-                        (player_x[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_x[i] >> (TILE_SIZE_BIT+FP_BITS)) &&
-                        (player_y[j]  >> (TILE_SIZE_BIT+FP_BITS)) == (projectile_y[i] >> (TILE_SIZE_BIT+FP_BITS))) {
+                        (player_x[j]&0xff00) == (projectile_x[i]&0xff00) &&
+                        (player_y[j]&0xff00) == (projectile_y[i]&0xff00)) {
                     /* Player i kills player j using a projectile */
-                    player_die(j);
+                    if((player_mode[j]==MODE_NORMAL) || (player_mode[j]==MODE_SQUID)) player_die(j);
                 }
             }
         }
@@ -1252,7 +1451,7 @@ void game_loop(void) {
             py = player_y[i] >> (TILE_SIZE_BIT + FP_BITS);
             map_type = map[MAP_ADR(px, py)];
             /* Water tiles are 0x2c, 0x2d, 0x3c, 0x3d */
-            if (map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) {
+            if ((map_type == 0x2c || map_type == 0x2d || map_type == 0x3c || map_type == 0x3d) && player_mode[i] != MODE_SQUID) {
                 player_die(i);
             }
         }

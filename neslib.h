@@ -8,8 +8,8 @@
 //          unrle_vram renamed to vram_unrle, with adr argument removed
 // 060414 - many fixes and improvements, including sequental VRAM updates
 // previous versions were created since mid-2011, there were many updates
-
-
+// 30012020 - implemented dampening by Simon 'the Sorcerer' Richter.
+// 26052020 - removed memcpy as it is available in string.h already.
 
 
 
@@ -30,7 +30,6 @@ void __fastcall__ pal_spr(const char *data);
 void __fastcall__ pal_col(unsigned char index,unsigned char color);
 
 //reset palette to $0f
-
 void __fastcall__ pal_clear(void);
 
 //set virtual bright both for sprites and background, 0 is black, 4 is normal, 8 is white
@@ -108,9 +107,13 @@ void __fastcall__ oam_hide_rest(unsigned char sprid);
 
 
 
-//play a music in FamiTone format
+//play a music in FamiTone format with gating 0..15
 
-void __fastcall__ music_play(unsigned char song);
+void __fastcall__ music_play_gated(unsigned char song, unsigned char dampening);
+
+void music_play(unsigned char song){
+ music_play_gated(song,15);
+}
 
 //stop music
 
@@ -123,6 +126,12 @@ void __fastcall__ music_pause(unsigned char pause);
 //play FamiTone sound effect on channel 0..3
 
 void __fastcall__ sfx_play(unsigned char sound,unsigned char channel);
+
+// same as above but with dampening 0..15
+
+void sfx_play_damped(unsigned char sound,unsigned char channel, unsigned char dampening){
+ sfx_play(sound,channel|(dampening<<2));
+};
 
 //play a DPCM sample, 1..63
 
@@ -235,16 +244,11 @@ void __fastcall__ vram_unrle(const unsigned char *data);
 
 
 
-//like a normal memcpy, but does not return anything
-
-void __fastcall__ memcpy(void *dst,void *src,unsigned int len);
 
 //like memset, but does not return anything
-
 void __fastcall__ memfill(void *dst,unsigned char value,unsigned int len);
 
 //delay for N frames
-
 void __fastcall__ delay(unsigned char frames);
 
 
@@ -267,8 +271,8 @@ void __fastcall__ delay(unsigned char frames);
 
 #define MASK_SPR		0x10
 #define MASK_BG			0x08
-#define MASK_EDGE_SPR	0x04
-#define MASK_EDGE_BG	0x02
+#define MASK_EDGE_SPR		0x04
+#define MASK_EDGE_BG		0x02
 
 #define NAMETABLE_A		0x2000
 #define NAMETABLE_B		0x2400

@@ -1,12 +1,12 @@
 ROM_CONFIG = nrom.cfg
 CRT_OBJ = crt0.o
 GAME_OBJ = game.o
-RUNTIME_LIB = runtime.lib
-
+RUNTIME_LIB = nes.lib
+CC65_HOME = /usr/share/cc65
 EXECUTABLE = splatood.nes
 
-ASM = ca65
-CC = cc65
+ASM = ca65 -t nes
+CC = cc65 -t nes -Oisr
 LD = ld65
 
 
@@ -15,13 +15,13 @@ all: $(EXECUTABLE) ${CRT_OBJ}
 crt0.o: *.s *.chr
 
 %.s: %.c *.h levels/*.h
-	$(CC) -Oi $< --add-source
+	CC65_HOME=$(CC65_HOME) $(CC) $< --add-source
 
 %.o: %.s
-	$(ASM) $<
+	CC65_HOME=$(CC65_HOME) $(ASM) $<
 
-$(EXECUTABLE): $(GAME_OBJ) $(ROM_CONFIG) $(CRT_OBJ) $(RUNTIME_LIB)
-	$(LD) -C $(ROM_CONFIG) -o $(EXECUTABLE) $(CRT_OBJ) $(GAME_OBJ) $(RUNTIME_LIB)
+$(EXECUTABLE): $(GAME_OBJ) $(ROM_CONFIG) $(CRT_OBJ)
+	CC65_HOME=$(CC65_HOME) $(LD) -C $(ROM_CONFIG) -o $(EXECUTABLE) $(CRT_OBJ) $(GAME_OBJ) $(RUNTIME_LIB)
 
 clean:
 	rm -f game.s *.o *.nes

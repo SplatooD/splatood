@@ -4,6 +4,146 @@
  * Player weapons are ordered ROLLER CHARGER (see WPN_ROLLER, etc in game.c)
  * Player directions need to be ordered DOWN RIGHT UP LEFT (see SPR_DOWN, etc in game.c)
  */
+const unsigned char SprPlayer1SquidUpFrame1[] = {
+    0,-1,0x66,0,
+    8,-1,0x67,0,
+    0, 7,0x76,0,
+    8, 7,0x77,0,
+    128
+};
+
+const unsigned char SprPlayer1SquidUpFrame2[] = {
+    0,-1,0x66,0,
+    8,-1,0x67,0,
+    0, 7,0x77,0|OAM_FLIP_H,
+    8, 7,0x76,0|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer1SquidRightFrame1[] = {
+    0,-1,0x68,0,
+    8,-1,0x69,0,
+    0, 7,0x78,0,
+    8, 7,0x79,0,
+    128
+};
+
+const unsigned char SprPlayer1SquidDownFrame1[] = {
+    0,-1,0x76,0|OAM_FLIP_V,
+    8,-1,0x77,0|OAM_FLIP_V,
+    0, 7,0x66,0|OAM_FLIP_V,
+    8, 7,0x67,0|OAM_FLIP_V,
+    128
+};
+
+const unsigned char SprPlayer1SquidLeftFrame1[] = {
+    0,-1,0x69,0|OAM_FLIP_H,
+    8,-1,0x68,0|OAM_FLIP_H,
+    0, 7,0x79,0|OAM_FLIP_H,
+    8, 7,0x78,0|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer1SquidRightFrame2[] = {
+    0,-1,0x78,0|OAM_FLIP_V,
+    8,-1,0x79,0|OAM_FLIP_V,
+    0, 7,0x68,0|OAM_FLIP_V,
+    8, 7,0x69,0|OAM_FLIP_V,
+    128
+};
+
+const unsigned char SprPlayer1SquidDownFrame2[] = {
+    0,-1,0x77,0|OAM_FLIP_V|OAM_FLIP_H,
+    8,-1,0x76,0|OAM_FLIP_V|OAM_FLIP_H,
+    0, 7,0x67,0|OAM_FLIP_V|OAM_FLIP_H,
+    8, 7,0x66,0|OAM_FLIP_V|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer1SquidLeftFrame2[] = {
+    0,-1,0x79,0|OAM_FLIP_H|OAM_FLIP_V,
+    8,-1,0x78,0|OAM_FLIP_H|OAM_FLIP_V,
+    0, 7,0x69,0|OAM_FLIP_H|OAM_FLIP_V,
+    8, 7,0x68,0|OAM_FLIP_H|OAM_FLIP_V,
+    128
+};
+
+const unsigned char* const SprPlayer1SquidDown[] = {SprPlayer1SquidDownFrame1, SprPlayer1SquidDownFrame2};
+const unsigned char* const SprPlayer1SquidRight[] = {SprPlayer1SquidRightFrame1, SprPlayer1SquidRightFrame2};
+const unsigned char* const SprPlayer1SquidUp[] = {SprPlayer1SquidUpFrame1, SprPlayer1SquidUpFrame2};
+const unsigned char* const SprPlayer1SquidLeft[] = {SprPlayer1SquidLeftFrame1, SprPlayer1SquidLeftFrame2};
+const unsigned char* const * const SprPlayer1Squid[] = {SprPlayer1SquidDown, SprPlayer1SquidRight, SprPlayer1SquidUp, SprPlayer1SquidLeft};
+
+const unsigned char SprPlayer2SquidUpFrame2[] = {
+    0,-1,0x66,1,
+    8,-1,0x67,1,
+    0, 7,0x76,1,
+    8, 7,0x77,1,
+    128
+};
+
+const unsigned char SprPlayer2SquidUpFrame1[] = {
+    0,-1,0x66,1,
+    8,-1,0x67,1,
+    0, 7,0x77,1|OAM_FLIP_H,
+    8, 7,0x76,1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer2SquidRightFrame2[] = {
+    0,-1,0x68,1,
+    8,-1,0x69,1,
+    0, 7,0x78,1,
+    8, 7,0x79,1,
+    128
+};
+
+const unsigned char SprPlayer2SquidDownFrame2[] = {
+    0,-1,0x76,1|OAM_FLIP_V,
+    8,-1,0x77,1|OAM_FLIP_V,
+    0, 7,0x66,1|OAM_FLIP_V,
+    8, 7,0x67,1|OAM_FLIP_V,
+    128
+};
+
+const unsigned char SprPlayer2SquidLeftFrame2[] = {
+    0,-1,0x69,1|OAM_FLIP_H,
+    8,-1,0x68,1|OAM_FLIP_H,
+    0, 7,0x79,1|OAM_FLIP_H,
+    8, 7,0x78,1|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer2SquidRightFrame1[] = {
+    0,-1,0x78,1|OAM_FLIP_V,
+    8,-1,0x79,1|OAM_FLIP_V,
+    0, 7,0x68,1|OAM_FLIP_V,
+    8, 7,0x69,1|OAM_FLIP_V,
+    128
+};
+
+const unsigned char SprPlayer2SquidDownFrame1[] = {
+    0,-1,0x77,1|OAM_FLIP_V|OAM_FLIP_H,
+    8,-1,0x76,1|OAM_FLIP_V|OAM_FLIP_H,
+    0, 7,0x67,1|OAM_FLIP_V|OAM_FLIP_H,
+    8, 7,0x66,1|OAM_FLIP_V|OAM_FLIP_H,
+    128
+};
+
+const unsigned char SprPlayer2SquidLeftFrame1[] = {
+    0,-1,0x79,1|OAM_FLIP_H|OAM_FLIP_V,
+    8,-1,0x78,1|OAM_FLIP_H|OAM_FLIP_V,
+    0, 7,0x69,1|OAM_FLIP_H|OAM_FLIP_V,
+    8, 7,0x68,1|OAM_FLIP_H|OAM_FLIP_V,
+    128
+};
+
+const unsigned char* const SprPlayer2SquidDown[] = {SprPlayer2SquidDownFrame1, SprPlayer2SquidDownFrame2};
+const unsigned char* const SprPlayer2SquidRight[] = {SprPlayer2SquidRightFrame1, SprPlayer2SquidRightFrame2};
+const unsigned char* const SprPlayer2SquidUp[] = {SprPlayer2SquidUpFrame1, SprPlayer2SquidUpFrame2};
+const unsigned char* const SprPlayer2SquidLeft[] = {SprPlayer2SquidLeftFrame1, SprPlayer2SquidLeftFrame2};
+const unsigned char* const * const SprPlayer2Squid[] = {SprPlayer2SquidDown, SprPlayer2SquidRight, SprPlayer2SquidUp, SprPlayer2SquidLeft};
+
 const unsigned char SprPlayer1RollerDownFrame1[] = {
     0,-1,0x40,0,
     8,-1,0x41,0,
@@ -151,7 +291,7 @@ const unsigned char SprPlayer1ChargerLeftFrame2[] = {
 const unsigned char* const SprPlayer1ChargerLeft[] = {SprPlayer1ChargerLeftFrame1, SprPlayer1ChargerLeftFrame2};
 
 const unsigned char* const * const SprPlayer1Charger[] = {SprPlayer1ChargerDown, SprPlayer1ChargerRight, SprPlayer1ChargerUp, SprPlayer1ChargerLeft};
-const unsigned char* const * const * const SprPlayer1[] = {SprPlayer1Roller, SprPlayer1Charger};
+const unsigned char* const * const * const SprPlayer1[] = {SprPlayer1Squid, SprPlayer1Roller, SprPlayer1Charger};
 
 const unsigned char SprPlayer2RollerDownFrame1[] = {
     0,-1,0x40,1,
@@ -300,7 +440,7 @@ const unsigned char SprPlayer2ChargerLeftFrame2[] = {
 const unsigned char* const SprPlayer2ChargerLeft[] = {SprPlayer2ChargerLeftFrame1, SprPlayer2ChargerLeftFrame2};
 
 const unsigned char* const * const SprPlayer2Charger[] = {SprPlayer2ChargerDown, SprPlayer2ChargerRight, SprPlayer2ChargerUp, SprPlayer2ChargerLeft};
-const unsigned char* const * const * const SprPlayer2[] = {SprPlayer2Roller, SprPlayer2Charger};
+const unsigned char* const * const * const SprPlayer2[] = {SprPlayer2Squid, SprPlayer2Roller, SprPlayer2Charger};
 
 const unsigned char* const * const * const * const SprPlayers[] = {SprPlayer1, SprPlayer2};
 
